@@ -1,0 +1,2525 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BNN Predictor - Core Engine</title>
+    <style>
+        /* =========================================
+           FRESH BNN THEME: MIDNIGHT ISLANDS
+        ========================================= */
+        :root { 
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #171717 100%);
+            --card-bg: rgba(30, 41, 59, 0.85); 
+            --card-border: #334155;
+            --accent-primary: #38bdf8;
+            --accent-secondary: #fcd34d;
+            --text-main: #f8fafc; 
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        body { 
+            background: var(--bg-gradient); 
+            background-attachment: fixed;
+            color: var(--text-main); 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 20px 20px 100px 20px; 
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* Island Card Layout */
+        .island-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 0 auto 25px auto;
+            max-width: 100%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+        }
+
+        .island-title {
+            color: var(--accent-primary);
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Streamlined Top Bar */
+        .header-info { text-align: center; margin-bottom: 25px; }
+        #personName { font-size: 2.2em; font-weight: 800; margin-bottom: 8px; color: var(--accent-secondary); text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .date-time-wrapper { display: flex; justify-content: center; gap: 15px; }
+        
+        input[type="date"], input[type="time"], input[type="text"], select {
+            background: #0f172a;
+            color: var(--text-main);
+            border: 1px solid var(--card-border);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            outline: none;
+            transition: border-color 0.2s;
+            color-scheme: dark;
+        }
+        input:focus, select:focus { border-color: var(--accent-primary); }
+
+        /* Unified Button Styles */
+        button {
+            background: #334155;
+            color: var(--text-main);
+            border: 1px solid #475569;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        button:hover { background: #475569; border-color: var(--accent-primary); transform: translateY(-1px); }
+        button:active { transform: translateY(1px); }
+        
+        .btn-clear { background: #3f3f46; border-color: #52525b; }
+        .btn-load { background: #7c2d12; border-color: #9a3412; }
+        .btn-save { background: #1e3a8a; border-color: #1e40af; }
+        .btn-fetch { background: #064e3b; border-color: #065f46; color: var(--accent-secondary); }
+
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+        .toggle-label input[type="checkbox"] { accent-color: var(--accent-primary); width: 16px; height: 16px; cursor: pointer; }
+        .toggle-label:hover { color: var(--text-main); }
+        .toggle-active { color: var(--accent-secondary) !important; }
+
+        /* Fetcher Row Layouts */
+        .fetch-row { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; width: 100%; margin-bottom: 15px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group span { font-size: 12px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+
+        /* Kundali UI */
+        .varga-card { 
+            background: #0f172a; 
+            border: 1px solid var(--card-border); 
+            padding: 15px; 
+            border-radius: 8px; 
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 800px;
+        }
+        .varga-title { 
+            text-align: center; color: var(--accent-secondary); font-size: 1.2em; 
+            font-weight: bold; margin-bottom: 12px; 
+        }
+        .kundali { 
+            display: grid;
+            grid-template-columns: repeat(4, minmax(85px, 1fr));
+            grid-template-rows: repeat(4, minmax(85px, auto));
+            width: 100%;
+            border: 1px solid var(--card-border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .house {
+            border: 1px solid var(--card-border);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100%; position: relative; padding: 10px 5px; box-sizing: border-box;
+            background: rgba(0,0,0,0.3);
+        }
+        .asc-house {
+            background: rgba(56, 189, 248, 0.1); 
+            box-shadow: inset 0 0 10px rgba(56, 189, 248, 0.2);
+        }
+        .house-num {
+            position: absolute; top: 4px; left: 6px; color: var(--text-muted);
+            font-weight: bold; font-size: 16px; line-height: 1; pointer-events: none;
+        }
+        .p-line {
+            margin: 2px 0; font-size: 15px; color: var(--text-main); white-space: normal;
+            text-align: center; font-weight: 600;
+        }
+        .asc-line { color: var(--accent-secondary); font-weight: 800; }
+        .center-box { 
+            grid-column: 2 / 4; grid-row: 2 / 4; background: #0f172a; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 2em; color: var(--card-border); font-weight: 900; letter-spacing: 2px;
+        }
+/* Vimshottari Styles - LOCKED GRID */
+        .vim-maha { background: linear-gradient(90deg, #1e293b, #0f172a); border-left: 6px solid #475569 !important; color: var(--text-main); width: 100% !important; box-sizing: border-box !important; }
+        .vim-bhukti { background: linear-gradient(90deg, #0f172a, #020617); border-left: 4px solid #38bdf8 !important; color: #bae6fd; width: 100% !important; box-sizing: border-box !important; }
+        .vim-antara { background: #000000; border-left: 8px solid #fcd34d !important; color: #fef3c7; width: 100% !important; box-sizing: border-box !important; }
+        .vim-maha.active { border-left: 6px solid var(--accent-secondary) !important; background: rgba(252, 211, 77, 0.1); }
+        .vim-bhukti.active { border-left: 4px solid var(--success) !important; background: rgba(16, 185, 129, 0.1); }
+        .vimSym { display: flex; justify-content: center; align-items: center; font-size: 12px; color: var(--accent-secondary); }
+        
+        #vimContainer > div {
+            flex: 1 1 0 !important;
+            min-width: 0 !important; 
+        }
+
+        /* Force inner text to truncate without breaking the grid layout */
+        .vim-maha div, .vim-bhukti div, .vim-antara div {
+			white-space: nowrap;
+			overflow: visible;
+			text-overflow: unset;
+		}
+		
+		
+		
+		
+    </style>
+</head>
+<body>
+
+    <div class="header-info">
+        <div id="personName">BNN Predictor Engine</div>
+        <div class="date-time-wrapper">
+            <input type="date" id="dobField" onchange="manualTimeChange()" oninput="manualTimeChange()">
+            <input type="time" id="tobField" step="1" onchange="manualTimeChange()" oninput="manualTimeChange()">
+        </div>
+    </div>
+
+    <div class="island-card" id="onlineFetchBox">
+        <div class="island-title">
+            <span>&#x1F310; CLOUD HOROSCOPE FETCHER</span>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <span style="color: var(--text-muted); font-size: 12px;">Profile Name:</span>
+                <input type="text" id="onName" placeholder="e.g. Name" style="width: 180px; text-transform: uppercase;">
+            </div>
+        </div>
+        
+        <div class="fetch-row">
+            <div class="form-group">
+                <span>&#x1F4C5; Date (DD-MM-YYYY)</span>
+                <div style="display:flex; gap:6px; align-items:center;">
+                    <input type="text" id="onDay" placeholder="DD" maxlength="2" style="width:45px; text-align:center;" onkeydown="arrowSpinner(event, 1, 31, 2)" oninput="smartJump(this, 'onMonth', 'day')"> -
+                    <input type="text" id="onMonth" placeholder="MM" maxlength="2" style="width:45px; text-align:center;" onkeydown="arrowSpinner(event, 1, 12, 2)" oninput="smartJump(this, 'onYear', 'month')"> -
+                    <input type="text" id="onYear" placeholder="YYYY" maxlength="4" style="width:65px; text-align:center;" onkeydown="arrowSpinner(event, 1900, 2100, 4)" oninput="smartJump(this, 'onHour', 'year')">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <span>&#x23F1; Time (HH:MM:SS)</span>
+                <div style="display:flex; gap:6px; align-items:center;">
+                    <input type="text" id="onHour" placeholder="HH" maxlength="2" style="width:45px; text-align:center;" onkeydown="arrowSpinner(event, 0, 23, 2)" oninput="smartJump(this, 'onMin', 'hour')"> :
+                    <input type="text" id="onMin" placeholder="MM" maxlength="2" style="width:45px; text-align:center;" onkeydown="arrowSpinner(event, 0, 59, 2)" oninput="smartJump(this, 'mapSearchQuery', 'minute')"> :
+                    <input type="text" id="onSec" value="00" maxlength="2" style="width:45px; text-align:center;" onkeydown="arrowSpinner(event, 0, 59, 2)">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <span>&#x1F4CD; Standard Places</span>
+                <select id="locationPreset" onchange="applyPresetLocation()" style="width: 160px;">
+                    <option value="manual">Manual GPS (Default)</option>
+                    <option value="13.3190737,77.1326306">Tumakuru</option>
+                    <option value="12.918880,77.634986">Bengaluru</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <span>Lat</span>
+                <input type="text" id="onlineLat" value="13.3190737" style="width: 100px;">
+            </div>
+            <div class="form-group">
+                <span>Lon</span>
+                <input type="text" id="onlineLon" value="77.1326306" style="width: 100px;">
+            </div>
+        </div>
+
+        <div class="fetch-row" style="border-top: 1px solid var(--card-border); padding-top: 15px; justify-content: space-between;">
+            <div class="form-group" style="flex-grow: 1;">
+                <span>&#x1F50D; Map Search</span>
+                <div style="display:flex; gap:6px; align-items: center;">
+                    <input type="text" id="mapSearchQuery" placeholder="Search Place..." style="width: 200px;" onkeydown="if(event.key === 'Enter') searchOnlineMap()">
+                    <button onclick="searchOnlineMap()">Search</button>
+                    <select id="mapSearchResults" style="display:none; width: 200px;" onchange="applyMapSelection()"></select>
+                    <span id="detectedTzBadge" style="background: var(--card-border); padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; color: var(--accent-secondary); display: none;">Asia/Kolkata</span>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; align-items: center;">
+                
+                <div id="serverWakeContainer" style="visibility: hidden; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-family: monospace; font-weight: bold; margin-right: 15px;">
+                    <span id="wakeMessage" style="color: var(--accent-secondary); font-size: 12px;">> SYS.WAKE...</span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span id="digitalClockPart" style="color: var(--accent-secondary); font-size: 20px;">00:00</span>
+                        <span id="progressBarPart" style="color: var(--accent-secondary); font-size: 12px; letter-spacing: 1px;">[....................]</span>
+                    </div>
+                </div>
+
+                <button class="btn-clear" onclick="clearFetchData()">&#x1F9F9; Clear</button>
+                <input type="file" id="loadProfileInput" accept=".json" style="display:none" onchange="loadCloudProfile(event)">
+                <button class="btn-load" onclick="document.getElementById('loadProfileInput').click()">Load Profile</button>
+                <button class="btn-save" onclick="saveCloudProfile()">Save Profile</button>
+                <button id="fetchCloudBtn" class="btn-fetch" onclick="fetchFromCloud()">Fetch Data &#x1F4E1;</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="island-card">
+        <div class="island-title">Date Difference Utility</div>
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+            <div style="display: flex; gap: 20px;">
+                <label style="display: flex; align-items: center; gap: 10px; font-weight: 600;">
+                    Start
+                    <input type="date" id="toolStartDate" onchange="calcToolDateDiff()" oninput="calcToolDateDiff()">
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; font-weight: 600;">
+                    End
+                    <input type="date" id="toolEndDate" onchange="calcToolDateDiff()" oninput="calcToolDateDiff()">
+                </label>
+            </div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span style="color: var(--text-muted); font-weight: 700;">Result:</span>
+                <div id="toolDateDiff" style="background: #0f172a; border: 1px solid var(--card-border); padding: 8px 15px; border-radius: 6px; color: var(--success); font-weight: bold; min-width: 200px; text-align: center;">
+                    Waiting...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="island-card" style="max-width: 100%;">
+        <div class="island-title" style="cursor:pointer;" onclick="toggleVim()">
+            Vimshottari Dasha ▼
+        </div>
+        
+        <div class="fetch-row" style="justify-content: center; margin-bottom: 15px; align-items: center;">
+            <button onclick="setTodayVimDate()">Current Date</button>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="color:var(--accent-secondary); font-weight:bold;">Find Date:</span>
+                <input type="date" id="vimFindDate">
+                <button onclick="findVimDate()" style="background: var(--accent-primary); color: #000; border:none;">Find</button>
+            </div>
+            <button onclick="collapseVim()">Collapse</button>
+            
+            <div style="border-left: 1px solid var(--card-border); padding-left: 20px; margin-left: 10px; display: flex; align-items: center; gap: 15px;">
+                <select id="expandLevel" onchange="findVimDate()">
+                    <option value="2" selected>Bukthi Level</option>
+                    <option value="3">Antara Level</option>
+                </select>
+                <label class="toggle-label toggle-active" style="cursor:pointer;"><input type="checkbox" id="hideAllAge" onchange="calc()"> Hide Age</label>
+                <label class="toggle-label toggle-active" style="cursor:pointer;"><input type="checkbox" id="hideBhuktiAge" onchange="calc()" checked> Hide Bukthi Age</label>
+                
+                <label class="toggle-label toggle-active" style="cursor:pointer;"><input type="checkbox" id="modeDateHide" onchange="calc()" checked> Date Hide</label>
+                
+            </div>
+		
+		
+		
+		
+		
+
+        <div id="vimContainer" style="display:none; gap: 20px; flex-wrap: nowrap; width:100%;">
+            <div style="flex: 1 1 50%; width:100%; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 15px; border: 1px solid var(--card-border);">
+                <div style="text-align:center; color: var(--accent-primary); font-size: 1.1em; font-weight:bold; margin-bottom:15px; text-transform: uppercase;">Chandra Based</div>
+                <div id="vimChandra"></div>
+            </div>
+            <div style="flex: 1; min-width: 300px; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 15px; border: 1px solid var(--card-border);">
+                <div style="text-align:center; color: var(--accent-primary); font-size: 1.1em; font-weight:bold; margin-bottom:15px; text-transform: uppercase;">Lagna Based</div>
+                <div id="vimLagna"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="island-card">
+        
+        <div class="controls-grid" style="display: flex; flex-wrap: nowrap; overflow-x: auto; margin-bottom: 25px; padding-bottom: 20px; background: transparent; border-bottom: 1px solid var(--card-border); gap: 20px; justify-content: center;">
+            <input type="file" id="fIn" accept=".json" style="display:none">
+            <button onclick="document.getElementById('fIn').click()" style="background: var(--accent-primary); color: #000; border: none; font-size: 13px; white-space: nowrap; padding: 6px 12px;">LOAD JSON DATA</button>
+            
+            <label class="toggle-label toggle-active" style="white-space: nowrap;"><input type="checkbox" id="shiftedLagnaToggle" checked onchange="calc()"> Shifted Lagna</label>
+            <label class="toggle-label" style="white-space: nowrap;"><input type="checkbox" id="modeSign2Sign" onchange="enforceSingleMode('modeSign2Sign')"> Sign2Sign</label>
+            <label class="toggle-label" style="white-space: nowrap;"><input type="checkbox" id="modeKP" checked onchange="enforceSingleMode('modeKP')"> KP</label>
+            <label class="toggle-label" style="white-space: nowrap;"><input type="checkbox" id="modeKN" checked onchange="calc()"> KN</label>
+            
+            <label class="toggle-label" style="white-space: nowrap;"><input type="checkbox" id="showLordship" onchange="calc()" checked> Lordship</label>
+            <label class="toggle-label" style="color: var(--success); white-space: nowrap;"><input type="checkbox" id="useTrueNode" onchange="calc()"> True Node</label>
+        </div>
+
+        <div class="island-title" style="cursor:pointer; border-bottom: none; justify-content: flex-start; font-size: 1.4rem;" onclick="toggleSection('kundaliContent', this)">
+            KUNDALI ▼
+        </div>
+        <div id="kundaliContent" style="display: block; width: 100%;">
+        
+		
+		
+		
+		
+		
+		
+		
+		<div id="specificChartWrapper" style="padding-bottom: 10px;">
+            <style>
+                .pivot-btn {
+                    background: #0f172a;
+                    color: var(--text-muted);
+                    border: 1px solid var(--card-border);
+                    padding: 4px 12px;
+                    border-radius: 4px;
+                    font-size: 14px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .pivot-btn:hover { border-color: var(--accent-primary); color: var(--text-main); }
+                .pivot-btn.active { background: var(--accent-primary); color: #000; border-color: var(--accent-primary); }
+            </style>
+
+            <div style="text-align:center; margin-bottom: 25px; display: flex; flex-direction: column; align-items: center; gap: 15px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <label style="color: var(--text-muted); font-weight: bold; font-size: 15px;">
+                        SELECT DIVISIONAL CHART:
+                    </label>
+                    <select id="specificChartSelect" onchange="renderSpecificChart()" style="width: 120px; font-size: 16px;">
+                    </select>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 15px; border: 1px solid var(--card-border); padding: 10px 20px; border-radius: 8px; background: rgba(0,0,0,0.2); max-width: 100%; overflow-x: auto;">
+                    <label style="color: var(--text-muted); font-weight: bold; font-size: 14px; white-space: nowrap;">
+                        PIVOT:
+                    </label>
+                    <div style="display: flex; gap: 6px; flex-wrap: nowrap;">
+                        <button id="pivotBtn1" class="pivot-btn active" onclick="setPivot(1)">1</button>
+                        <button id="pivotBtn2" class="pivot-btn" onclick="setPivot(2)">2</button>
+                        <button id="pivotBtn3" class="pivot-btn" onclick="setPivot(3)">3</button>
+                        <button id="pivotBtn4" class="pivot-btn" onclick="setPivot(4)">4</button>
+                        <button id="pivotBtn5" class="pivot-btn" onclick="setPivot(5)">5</button>
+                        <button id="pivotBtn6" class="pivot-btn" onclick="setPivot(6)">6</button>
+                        <button id="pivotBtn7" class="pivot-btn" onclick="setPivot(7)">7</button>
+                        <button id="pivotBtn8" class="pivot-btn" onclick="setPivot(8)">8</button>
+                        <button id="pivotBtn9" class="pivot-btn" onclick="setPivot(9)">9</button>
+                        <button id="pivotBtn10" class="pivot-btn" onclick="setPivot(10)">10</button>
+                        <button id="pivotBtn11" class="pivot-btn" onclick="setPivot(11)">11</button>
+                        <button id="pivotBtn12" class="pivot-btn" onclick="setPivot(12)">12</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="singleKundaliContainer" style="display:flex; justify-content:center; width:100%;">
+            </div>
+        </div>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+
+            <div id="singleKundaliContainer" style="display:flex; justify-content:center; width:100%;">
+                </div>
+            </div> </div>
+    </div>
+
+
+    <script>
+        let raw = null;
+        let currentTimezoneStr = "Asia/Kolkata";
+        let moonStarLord = "Sy";
+        let lagnaStarLord = "Sy";
+        let currentDateTime = null;
+        let originalDateTime = null;
+
+        const vList = [1, 10, 9, 7, 2, 4, 8, 60, 11, 30, 21, 16, 6, 12, 3, 24, 27, 20, 40, 45, 5];
+        const pNames = ["Surya", "Chandra", "Mangala", "Budha", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"];
+        
+        const planetNameMapKN = {
+            Sy: "ರವಿ", Ch: "ಚಂದ್ರ", Ma: "ಕುಜ", Bu: "ಬುಧ", Ju: "ಗುರು", Ve: "ಶುಕ್ರ", Sa: "ಶನಿ", Ra: "ರಾಹು", Ke: "ಕೇತು", ASC: "ಲಗ್ನ"
+        };
+
+        const VIM_ORDER = ["Ke","Ve","Sy","Ch","Ma","Ra","Ju","Sa","Bu"];
+        const VIM_YEARS = { Ke:7, Ve:20, Sy:6, Ch:10, Ma:7, Ra:18, Ju:16, Sa:19, Bu:17 };
+        const EN_NAMES = { Ke:"Ketu", Ve:"Venus", Sy:"Surya", Ch:"Chandra", Ma:"Mangala", Ra:"Rahu", Ju:"Jupiter", Sa:"Saturn", Bu:"Budha" };
+        const KN_NAMES = { Ke:"ಕೇತು", Ve:"ಶುಕ್ರ", Sy:"ರವಿ", Ch:"ಚಂದ್ರ", Ma:"ಕುಜ", Ra:"ರಾಹು", Ju:"ಗುರು", Sa:"ಶನಿ", Bu:"ಬುಧ" };
+        const VIM_SYMBOLS = { 1:"⭐", 2:"▶", 3:"◆" };
+
+        let currentOpenMahaBox = {};
+        let currentOpenBhuktiBox = {};
+
+
+        /* =========================================================
+           CLOUD FETCHER / MAP LOGIC (IMPORTED FROM REF PROJECT)
+        ========================================================= */
+        function applyPresetLocation() {
+            const val = document.getElementById("locationPreset").value;
+            const tzBadge = document.getElementById("detectedTzBadge");
+
+            if (val === "manual") {
+                document.getElementById("onlineLat").value = "13.3190737";
+                document.getElementById("onlineLon").value = "77.1326306";
+            } else {
+                const coords = val.split(",");
+                document.getElementById("onlineLat").value = coords[0];
+                document.getElementById("onlineLon").value = coords[1];
+            }
+            
+            currentTimezoneStr = "Asia/Kolkata";
+            if(tzBadge) {
+                tzBadge.innerText = currentTimezoneStr;
+                tzBadge.style.display = "inline-block";
+            }
+        }
+
+        let currentMapResults = [];
+
+        async function searchOnlineMap() {
+            const query = document.getElementById("mapSearchQuery").value.trim();
+            if (!query) return;
+
+            const btn = document.querySelector("button[onclick='searchOnlineMap()']");
+            const origText = btn.innerHTML;
+            btn.innerHTML = "Searching...";
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=10`);
+                const data = await response.json();
+
+                const resultsDropdown = document.getElementById("mapSearchResults");
+                resultsDropdown.innerHTML = ""; 
+
+                if (data && data.results && data.results.length > 0) {
+                    currentMapResults = data.results;
+                    const defaultOpt = document.createElement("option");
+                    defaultOpt.text = `-- Found ${data.results.length} places. Select one --`;
+                    defaultOpt.value = "";
+                    resultsDropdown.appendChild(defaultOpt);
+
+                    data.results.forEach((place, index) => {
+                        const opt = document.createElement("option");
+                        let displayName = `${place.name}`;
+                        if(place.admin1) displayName += `, ${place.admin1}`;
+                        if(place.country) displayName += `, ${place.country}`;
+                        
+                        if (displayName.length > 60) displayName = displayName.substring(0, 57) + "...";
+                        opt.text = displayName;
+                        opt.value = index; 
+                        resultsDropdown.appendChild(opt);
+                    });
+                    resultsDropdown.style.display = "block";
+                } else {
+                    resultsDropdown.style.display = "none";
+                    alert("Place not found. Try adding a broader city name.");
+                }
+            } catch (error) {
+                alert("Network error while searching the map.");
+            } finally {
+                btn.innerHTML = origText;
+                btn.disabled = false;
+            }
+        }
+
+        function applyMapSelection() {
+            const dropdown = document.getElementById("mapSearchResults");
+            const selectedIndex = dropdown.value;
+            if (selectedIndex !== "") {
+                const selectedPlace = currentMapResults[selectedIndex];
+                document.getElementById("onlineLat").value = parseFloat(selectedPlace.latitude).toFixed(6);
+                document.getElementById("onlineLon").value = parseFloat(selectedPlace.longitude).toFixed(6);
+                document.getElementById("locationPreset").value = "manual";
+                
+                currentTimezoneStr = selectedPlace.timezone || "UTC";
+                const tzBadge = document.getElementById("detectedTzBadge");
+                if(tzBadge) {
+                    tzBadge.innerText = currentTimezoneStr;
+                    tzBadge.style.display = "inline-block";
+                }
+            }
+        }
+
+        function calculateAccurateOffset(tzString, d, m, y, hr, min) {
+            try {
+                const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}T${String(hr).padStart(2,'0')}:${String(min).padStart(2,'0')}:00Z`;
+                const dateObj = new Date(dateStr);
+                const formatter = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeZoneName: 'longOffset' });
+                const parts = formatter.formatToParts(dateObj);
+                const tzPart = parts.find(p => p.type === 'timeZoneName').value;
+                if (tzPart === 'GMT') return 0;
+                
+                const sign = tzPart.includes('-') ? -1 : 1;
+                const match = tzPart.match(/GMT[+-](\d{1,2})(?::(\d{2}))?/);
+                if(match) {
+                    const hrs = parseInt(match[1] || 0);
+                    const mins = parseInt(match[2] || 0);
+                    // REVERTED: Server explicitly expects total minutes (e.g., 330)
+                    return sign * ((hrs * 60) + mins); 
+                }
+                return 330; // Fallback to IST in minutes
+            } catch(e) { 
+                return 330; // Fallback to IST in minutes
+            }
+        }
+		
+		
+		
+		
+		
+		
+
+        function arrowSpinner(e, min, max, padding) {
+            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                e.preventDefault(); 
+                let val = parseInt(e.target.value);
+                if (isNaN(val)) {
+                    if (max > 2000) val = new Date().getFullYear(); 
+                    else val = min;
+                }
+                if (e.key === "ArrowUp") val++;
+                if (e.key === "ArrowDown") val--;
+                if (val > max) val = min;
+                if (val < min) val = max;
+                e.target.value = String(val).padStart(padding, '0');
+            }
+        }
+
+        function smartJump(currentElement, nextElementId, type) {
+            let val = currentElement.value;
+            val = val.replace(/\D/g, '');
+            currentElement.value = val;
+
+            if (val.length === 0) return;
+            let shouldJump = false;
+
+            if (type === 'year') {
+                if (val.length >= 4) shouldJump = true;
+            } else {
+                if (val.length >= 2) {
+                    shouldJump = true;
+                } else if (val.length === 1) {
+                    let num = parseInt(val);
+                    if (type === 'day' && num >= 4) shouldJump = true;
+                    if (type === 'month' && num >= 2) shouldJump = true;   
+                    if (type === 'hour' && num >= 3) shouldJump = true;    
+                    if (type === 'minute' && num >= 6) shouldJump = true;  
+                }
+            }
+
+            if (shouldJump) {
+                if (type !== 'year' && val.length === 1) currentElement.value = "0" + val;
+                document.getElementById(nextElementId).focus();
+            }
+        }
+
+        function clearFetchData() {
+            document.getElementById("onName").value = "";
+            document.getElementById("onDay").value = "";
+            document.getElementById("onMonth").value = "";
+            document.getElementById("onYear").value = "";
+            document.getElementById("onHour").value = "";
+            document.getElementById("onMin").value = "";
+            document.getElementById("onSec").value = "00";
+        }
+
+
+
+        function saveCloudProfile() {
+            const name = document.getElementById("onName").value.trim();
+            if (name.length < 4) { alert("Please enter a profile name first."); return; }
+
+            const profileData = {
+                type: "CloudHoroscopeProfile",
+                name: name, 
+                date: { d: document.getElementById("onDay").value, m: document.getElementById("onMonth").value, y: document.getElementById("onYear").value },
+                time: { h: document.getElementById("onHour").value, min: document.getElementById("onMin").value, sec: document.getElementById("onSec").value },
+                coords: { lat: document.getElementById("onlineLat").value, lon: document.getElementById("onlineLon").value },
+                timezone: currentTimezoneStr,
+                chartData: raw // <--- NEW: Bundles the fully calculated chart into the save file!
+            };
+
+            const dataStr = JSON.stringify(profileData, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const safeName = name.replace(/[^a-z0-9]/gi, '_').toUpperCase();
+            
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${safeName}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+		
+		
+		
+		
+		
+
+        function loadCloudProfile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.type !== "CloudHoroscopeProfile") {
+                        alert("Invalid file. Please select a valid Cloud Horoscope Profile JSON.");
+                        return;
+                    }
+                    document.getElementById("onName").value = data.name || "";
+                    if (data.date) {
+                        document.getElementById("onDay").value = data.date.d || "";
+                        document.getElementById("onMonth").value = data.date.m || "";
+                        document.getElementById("onYear").value = data.date.y || "";
+                    }
+                    if (data.time) {
+                        document.getElementById("onHour").value = data.time.h || "";
+                        document.getElementById("onMin").value = data.time.min || "";
+                        document.getElementById("onSec").value = data.time.sec || "00";
+                    }
+                    if (data.coords) {
+                        document.getElementById("onlineLat").value = data.coords.lat || "";
+                        document.getElementById("onlineLon").value = data.coords.lon || "";
+                        document.getElementById("locationPreset").value = "manual"; 
+                    }
+                    
+                    // <--- ADDED: Load timezone from JSON and update the UI Badge
+                    // FIX: Support both "timezone" and "timezoneStr"
+					const tzValue = data.timezone || data.timezoneStr;
+
+					if (tzValue) {
+						currentTimezoneStr = tzValue;
+						const tzBadge = document.getElementById("detectedTzBadge");
+						if(tzBadge) {
+							tzBadge.innerText = currentTimezoneStr;
+							tzBadge.style.display = "inline-block";
+						}
+					} else {
+						currentTimezoneStr = "Asia/Kolkata";
+						const tzBadge = document.getElementById("detectedTzBadge");
+						if(tzBadge) tzBadge.style.display = "none";
+					}
+
+                } catch (error) {
+                    alert("Error reading the profile file.");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        let wakeInterval = null;
+
+        async function fetchFromCloud() {
+            const d = document.getElementById("onDay").value;
+            const m = document.getElementById("onMonth").value;
+            const y = document.getElementById("onYear").value;
+            const hr = document.getElementById("onHour").value;
+            const min = document.getElementById("onMin").value;
+            const sec = document.getElementById("onSec").value || "00"; 
+            const latVal = document.getElementById("onlineLat").value;
+            const lonVal = document.getElementById("onlineLon").value;
+
+            if (!d || !m || !y || !hr || !min || !latVal || !lonVal) {
+                alert("Please fill out all Date, Time, and Location fields.");
+                return;
+            }
+
+            const calculatedOffset = calculateAccurateOffset(currentTimezoneStr, d, m, y, hr, min);
+
+            const requestData = {
+                year: parseInt(y), month: parseInt(m), day: parseInt(d),
+                hour: parseInt(hr), minute: parseInt(min), second: parseInt(sec),
+                lat: parseFloat(latVal), lon: parseFloat(lonVal),
+                timezone_offset: calculatedOffset, 
+                horary_mode: false 
+            };
+
+            const btn = document.getElementById("fetchCloudBtn");
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "Fetching... &#x23F3;";
+            btn.disabled = true;
+
+            const wakeContainer = document.getElementById("serverWakeContainer");
+            const wakeMessage = document.getElementById("wakeMessage");
+            const digitalClockPart = document.getElementById("digitalClockPart");
+            const progressBarPart = document.getElementById("progressBarPart");
+
+            wakeContainer.style.visibility = "visible";
+            wakeMessage.innerText = "> INITIATING_LINK...";
+            
+            let secondsElapsed = 0;
+            digitalClockPart.innerText = "00:00";
+            progressBarPart.innerText = "[" + ".".repeat(20) + "]";
+
+            if (wakeInterval) clearInterval(wakeInterval);
+
+            wakeInterval = setInterval(() => {
+                secondsElapsed++;
+                let mins = Math.floor(secondsElapsed / 60);
+                let secs = secondsElapsed % 60;
+                digitalClockPart.innerText = String(mins).padStart(2, '0') + ":" + String(secs).padStart(2, '0');
+
+                if (secondsElapsed <= 40) {
+                    let percent = (secondsElapsed / 40) * 100;
+                    let pipesCount = Math.floor(percent / 5);
+                    let emptyCount = 20 - pipesCount;
+                    progressBarPart.innerText = "[" + "|".repeat(pipesCount) + ".".repeat(emptyCount) + "]";
+                } else {
+                    let wavePos = (secondsElapsed % 20);
+                    let waveArr = Array(20).fill('.');
+                    waveArr[wavePos] = '|';
+                    if(wavePos > 0) waveArr[wavePos-1] = '|';
+                    if(wavePos < 19) waveArr[wavePos+1] = '|';
+                    progressBarPart.innerText = "[" + waveArr.join('') + "]";
+                }
+
+                if (secondsElapsed === 2) wakeMessage.innerText = "> PINGING_SERVER...";
+                if (secondsElapsed === 5) wakeMessage.innerText = "> ESTABLISHING_CONNECTION...";
+                if (secondsElapsed === 15) wakeMessage.innerText = "> WAKING_COLD_INSTANCE...";
+                if (secondsElapsed === 30) wakeMessage.innerText = "> AWAITING_DATA_STREAM...";
+            }, 1000);
+            
+            try {
+                const response = await fetch('https://donnie-astro-engine.onrender.com/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.json();
+
+                if (wakeInterval) clearInterval(wakeInterval);
+                wakeMessage.innerText = "> LINK_ESTABLISHED";
+                progressBarPart.innerText = "[" + "|".repeat(20) + "]";
+                
+                setTimeout(() => { if (wakeContainer) wakeContainer.style.visibility = "hidden"; }, 2000); 
+
+                if (result.status === "success") {
+                    const data = result.data;
+                    raw = data;
+
+                    if (!raw.meta) {
+                        const userName = document.getElementById("onName").value.trim() || "Cloud Fetched Chart";
+                        const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}T${String(hr).padStart(2,'0')}:${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}Z`;
+                        raw.meta = { name: userName, datetime_utc: dateStr };
+                    } else {
+                        raw.meta.name = document.getElementById("onName").value.trim() || raw.meta.name;
+                    }
+
+                    const formattedDate = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    const formattedTime = `${String(hr).padStart(2, '0')}:${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+                    
+                    document.getElementById('dobField').value = formattedDate;
+                    document.getElementById('tobField').value = formattedTime;
+
+                    updateHeader();
+
+                    originalDateTime = new Date(formattedDate + "T" + formattedTime);
+                    currentDateTime  = new Date(originalDateTime);
+
+                    calc();
+                    renderSpecificChart();
+
+                    btn.innerHTML = "SUCCESS ✓";
+                    btn.style.background = "var(--success)";
+                    btn.style.color = "#000";
+
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.removeAttribute("style");
+                        btn.disabled = false;
+                    }, 3000);
+
+                } else {
+                    alert("Server Error: " + result.message);
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                if (wakeInterval) clearInterval(wakeInterval);
+                wakeMessage.innerText = "> CONNECTION_FAILED";
+                digitalClockPart.style.color = "var(--danger)";
+                
+                setTimeout(() => {
+                    if (wakeContainer) wakeContainer.style.visibility = "hidden";
+                    digitalClockPart.style.color = "var(--accent-secondary)";
+                }, 3000);
+
+                alert("Network Error: Could not reach the server.");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+
+        // --- Date Difference Logic ---
+        function calcToolDateDiff() {
+            const fromVal = document.getElementById("toolStartDate").value;
+            const toVal   = document.getElementById("toolEndDate").value;
+            const out     = document.getElementById("toolDateDiff");
+
+            if(!fromVal || !toVal) {
+                out.innerHTML = "Select both dates";
+                out.style.color = "var(--danger)";
+                return;
+            }
+
+            const [fy, fm, fd] = fromVal.split("-").map(Number);
+            const [ty, tm, td] = toVal.split("-").map(Number);
+
+            let fromDate = new Date(fy, fm - 1, fd);
+            let toDate   = new Date(ty, tm - 1, td);
+            let sign = "";
+            let start = fromDate;
+            let end   = toDate;
+
+            if(toDate < fromDate){ sign = "- "; start = toDate; end = fromDate; }
+
+            let years  = end.getFullYear() - start.getFullYear();
+            let months = end.getMonth() - start.getMonth();
+            let days   = end.getDate() - start.getDate();
+
+            if(days < 0){ months--; days += new Date(end.getFullYear(), end.getMonth(), 0).getDate(); }
+            if(months < 0){ years--; months += 12; }
+
+            out.style.color = "var(--success)";
+            out.innerHTML = `${sign}${years} years, ${months} months, ${days} days`;
+        }
+
+        (function initDateTool() {
+            const todayStr = new Date().toISOString().split("T")[0];
+            const startEl = document.getElementById("toolStartDate");
+            const endEl = document.getElementById("toolEndDate");
+            if(startEl) startEl.value = todayStr;
+            if(endEl) endEl.value = todayStr;
+            calcToolDateDiff();
+        })();
+
+        // --- UI Toggles ---
+        function toggleVim() {
+            const box = document.getElementById("vimContainer");
+            box.style.display = (box.style.display === "none") ? "flex" : "none";
+        }
+
+        function enforceSingleMode(activeId) {
+            if (window._modeSwitchLock) return;
+            window._modeSwitchLock = true;
+            const isSignActive = (activeId === "modeSign2Sign");
+            const mainSign = document.getElementById("modeSign2Sign");
+            const mainKP = document.getElementById("modeKP");
+            if (mainSign) mainSign.checked = isSignActive;
+            if (mainKP) mainKP.checked = !isSignActive;
+            setTimeout(() => { window._modeSwitchLock = false; }, 10);
+            calc();
+        }
+
+       function initChartDropdown() {
+            const sel = document.getElementById("specificChartSelect");
+            if(sel) {
+                sel.innerHTML = "";
+                // Added all charts from your vList in a clean, logical order
+                const customOrder = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 20, 21, 24, 27, 30, 40, 45, 60]; 
+                customOrder.forEach(v => {
+                    const op = document.createElement("option");
+                    op.value = v; op.textContent = "D" + v;
+                    sel.appendChild(op);
+                });
+                sel.value = 1; 
+            }
+        }
+
+        // --- Core Data Load ---
+       document.getElementById('fIn').onchange = (e) => {
+            const reader = new FileReader();
+            reader.onload = (f) => {
+                try {
+                    const loadedData = JSON.parse(f.target.result);
+                    
+                    // --- SMART JSON DETECTOR ---
+                    if (loadedData.type === "CloudHoroscopeProfile") {
+                        // 1. Restore the UI Inputs
+                        document.getElementById("onName").value = loadedData.name || "";
+                        document.getElementById("onDay").value = loadedData.date?.d || "";
+                        document.getElementById("onMonth").value = loadedData.date?.m || "";
+                        document.getElementById("onYear").value = loadedData.date?.y || "";
+                        document.getElementById("onHour").value = loadedData.time?.h || "";
+                        document.getElementById("onMin").value = loadedData.time?.min || "";
+                        document.getElementById("onSec").value = loadedData.time?.sec || "00";
+                        document.getElementById("onlineLat").value = loadedData.coords?.lat || "";
+                        document.getElementById("onlineLon").value = loadedData.coords?.lon || "";
+                        
+                        // 2. Restore Timezone
+                        if (loadedData.timezone) {
+                            currentTimezoneStr = loadedData.timezone;
+                            const tzBadge = document.getElementById("detectedTzBadge");
+                            if(tzBadge) { tzBadge.innerText = currentTimezoneStr; tzBadge.style.display = "inline-block"; }
+                        }
+
+                        // 3. Check for bundled chart data
+                        if (loadedData.chartData) {
+							raw = loadedData.chartData;
+						} else {
+							// AUTO FETCH USING LOADED DATA
+							setTimeout(() => {
+								fetchFromCloud();
+							}, 300);
+						}
+
+                    } else if (loadedData.ayanamshas) {
+                        // It's a raw Server JSON, accept it directly
+                        raw = loadedData;
+                    } else {
+                        alert("Unrecognized JSON format. Engine cannot load this.");
+                        return;
+                    }
+
+                    // --- BOOT UP THE ENGINE ---
+                    updateHeader();
+                    const d = document.getElementById('dobField').value;
+                    const t = document.getElementById('tobField').value;
+                    if (d && t) {
+                        originalDateTime = new Date(d + "T" + t);
+                        currentDateTime  = new Date(originalDateTime);
+                    }
+                    
+                    calc();
+                    initChartDropdown();
+                    if(typeof initDirDropdown === 'function') initDirDropdown();         
+                    renderSpecificChart();
+                    
+                } catch (err) {
+                    console.error("JSON Parse Error:", err);
+                    alert("Error reading JSON file. It might be corrupted.");
+                }
+            };
+            reader.readAsText(e.target.files[0]);
+            e.target.value = ''; 
+        };
+		
+		
+		
+		
+		
+		
+		
+		
+
+        function updateHeader() {
+            if(!raw) return;
+            document.getElementById('personName').innerText = raw.meta?.name || "Unknown";
+            
+            if (raw.meta?.datetime_utc) {
+                const utcDate = new Date(raw.meta.datetime_utc);
+                const y = utcDate.getFullYear();
+                const m = String(utcDate.getMonth()+1).padStart(2,'0');
+                const d = String(utcDate.getDate()).padStart(2,'0');
+                const hh = String(utcDate.getHours()).padStart(2,'0');
+                const mm = String(utcDate.getMinutes()).padStart(2,'0');
+                const ss = String(utcDate.getSeconds()).padStart(2,'0');
+
+                document.getElementById('dobField').value = `${y}-${m}-${d}`;
+                document.getElementById('tobField').value = `${hh}:${mm}:${ss}`;
+            }
+        }
+
+        function buildDateTime() {
+            const d = document.getElementById('dobField').value;
+            const t = document.getElementById('tobField').value;
+            if (!d || !t) return;
+            if (!originalDateTime) originalDateTime = new Date(d + "T" + t);
+            if (!currentDateTime) currentDateTime = new Date(originalDateTime);
+        }
+
+        function manualTimeChange() {
+            const d = document.getElementById('dobField').value;
+            const t = document.getElementById('tobField').value;
+            if (!d || !t) return;
+            currentDateTime = new Date(d + "T" + t);
+            if (!originalDateTime) originalDateTime = new Date(currentDateTime);
+            calc();
+            renderSpecificChart();
+        }
+
+        function getVSign(baseDeg, v) {
+            const sign = Math.floor(baseDeg / 30);  
+            let deg  = baseDeg - (sign * 30);
+            if (deg < 0) deg = 0;
+            if (deg >= 30) deg = 29.999999;
+
+            if (v === 1) return sign;
+            if (v === 2) return deg < 15 ? sign : (sign + 10) % 12;
+            if (v === 3) {
+                const d = Math.floor(deg / 10);
+                if (d === 0) return sign;
+                if (d === 1) return (sign + 4) % 12;
+                return (sign + 8) % 12;
+            }
+            if (v === 4) return (sign + Math.floor(deg / 7.5) * 3) % 12;
+            if (v === 5) {
+                const part = Math.floor(deg / 6);
+                const isOdd = (sign % 2 === 0);   
+                const oddCycle = [0, 10, 8, 2, 6];   
+                const evenCycle = [1, 5, 11, 9, 7];  
+                return isOdd ? oddCycle[part] : evenCycle[part];
+            }
+            if (v === 6) return (sign * 6 + Math.floor(deg * 6 / 30)) % 12;
+            if (v === 7) {
+                const base = (sign % 2 === 0) ? sign : (sign + 6) % 12;
+                return (base + Math.floor(deg * 7 / 30)) % 12;
+            }
+            if (v === 8) return (sign * 8 + Math.floor(deg * 8 / 30)) % 12;
+            if (v === 9) return (sign * 9 + Math.floor(deg * 9 / 30)) % 12;
+            if (v === 10) {
+                const base = (sign % 2 === 0) ? sign : (sign + 8) % 12;
+                return (base + Math.floor(deg / 3)) % 12;
+            }
+            if (v === 11) return (sign * 11 + Math.floor(deg * 11 / 30)) % 12;
+            if (v === 12) return (sign + Math.floor(deg * 12 / 30)) % 12;
+            if (v === 16) return (sign * 16 + Math.floor(deg * 16 / 30)) % 12;
+            if (v === 20) return (sign * 20 + Math.floor(deg * 20 / 30)) % 12;
+            if (v === 24) {
+                const part = Math.floor(deg * 24 / 30);
+                const isOdd = (sign % 2 === 0);
+                const base = isOdd ? 4 : 3; 
+                return (base + part) % 12;
+            }
+            if (v === 27) return (sign * 27 + Math.floor(deg * 27 / 30)) % 12;
+            if (v === 30) {
+                const isOdd = (sign % 2 === 0);
+                if (isOdd) {
+                    if (deg < 5) return 0; else if (deg < 10) return 10; else if (deg < 18) return 8; else if (deg < 25) return 2; else return 6;                
+                } else {
+                    if (deg < 5) return 1; else if (deg < 12) return 5; else if (deg < 20) return 11; else if (deg < 25) return 9; else return 7;                
+                }
+            }
+            if (v === 40) {
+                const part = Math.floor(deg * 40 / 30);
+                const base = (sign % 2 === 0) ? 0 : 6; 
+                return (base + part) % 12;
+            }
+            if (v === 45) {
+                const part = Math.floor(deg * 45 / 30);
+                let base;
+                if (sign % 3 === 0) base = 0; else if (sign % 3 === 1) base = 4; else base = 8;                    
+                return (base + part) % 12;
+            }
+            if (v === 60) return (sign + Math.floor(deg * 60 / 30)) % 12;
+            return sign;
+        }
+
+        function calc() {
+            if (!raw) return;
+            const modeSign2Sign = document.getElementById('modeSign2Sign')?.checked;
+            const modeKP = document.getElementById('modeKP')?.checked;
+            const SHIFTED_LAGNA = document.getElementById("shiftedLagnaToggle")?.checked;
+            
+            buildDateTime();
+            
+            const d_raw = raw.ayanamshas["Lahiri"];
+            const d = { ...d_raw, planets: { ...d_raw.planets }, planets_retro: { ...(d_raw.planets_retro || {}) } };
+
+            if (document.getElementById("useTrueNode")?.checked) {
+                if (d.planets["Rahu_true"] !== undefined) d.planets["Rahu"] = d.planets["Rahu_true"];
+                if (d.planets["Ketu_true"] !== undefined) d.planets["Ketu"] = d.planets["Ketu_true"];
+            }
+
+            let lagnaShifted = d.lagna;
+            if (SHIFTED_LAGNA && originalDateTime && currentDateTime) {
+                const diffMs = currentDateTime - originalDateTime;
+                lagnaShifted += (diffMs / 60000) * 0.25;
+                while (lagnaShifted < 0) lagnaShifted += 360;
+                while (lagnaShifted >= 360) lagnaShifted -= 360;
+            }
+
+            let moonShifted = d.planets["Chandra"];
+            if (SHIFTED_LAGNA && originalDateTime && currentDateTime) {
+                const diffMs = currentDateTime - originalDateTime;
+                moonShifted += (diffMs / 60000) * (13.176 / (24*60)); 
+                while (moonShifted < 0) moonShifted += 360;
+                while (moonShifted >= 360) moonShifted -= 360;
+            }
+
+            const getStarLord = (deg) => {
+                const nakSize = 13 + (20/60);
+                return VIM_ORDER[Math.floor(deg / nakSize) % 9];
+            };
+            moonStarLord = getStarLord(moonShifted);
+            lagnaStarLord = getStarLord(lagnaShifted);
+
+            const shiftedPlanets = { ...d.planets };
+            if (SHIFTED_LAGNA && originalDateTime && currentDateTime) {
+                const diffDays = (currentDateTime - originalDateTime) / (60000 * 60 * 24);
+                const PLANET_SPEED = { Surya: 0.9856, Chandra: 13.176, Mangala: 0.524, Budha: 1.2, Jupiter: 0.083, Venus: 1.18, Saturn: 0.033, Rahu: -0.05295, Ketu: -0.05295 };
+                Object.keys(shiftedPlanets).forEach(p => {
+                    if(!PLANET_SPEED[p]) return;
+                    let newDeg = shiftedPlanets[p] + (PLANET_SPEED[p] * diffDays);
+                    while(newDeg < 0) newDeg += 360;
+                    while(newDeg >= 360) newDeg -= 360;
+                    shiftedPlanets[p] = newDeg;
+                });
+            }
+
+            if(!window._vargaChartStore) window._vargaChartStore = {};
+            if(!window._ascSigns) window._ascSigns = {};
+
+            vList.forEach(v => {
+                const chart = Array(12).fill().map(() => []);
+                let planetDegs = { ...shiftedPlanets };
+                let lagnaDeg;
+
+                if (modeKP) {
+                    const ascSign = getVSign(lagnaShifted, v);
+                    const ascDeg  = (lagnaShifted * v) % 30;
+                    let ascFull   = ascSign * 30 + ascDeg;
+                    const shift = ascDeg; 
+
+                    lagnaDeg = ascFull - shift;
+                    if (lagnaDeg < 0) lagnaDeg += 360;
+
+                    pNames.forEach(p => {
+                        const rawDeg = d.planets[p];
+                        const sign = getVSign(rawDeg, v);
+                        const deg  = (rawDeg * v) % 30;
+                        let full = sign * 30 + deg;
+                        let newDeg = full - shift;
+                        if (newDeg < 0) newDeg += 360;
+                        planetDegs[p] = newDeg;
+                    });
+
+                    let kpSignShift = (SHIFTED_LAGNA && ascDeg >= 15) ? 1 : 0;
+                    let ascSignKP = (ascSign + kpSignShift) % 12;
+                    chart[ascSignKP].push({ n: "ASC", d: 0, r: false, isAsc: true });
+
+                } else {
+                    let targetSign = getVSign(lagnaShifted, v);
+                    let ascDeg = (lagnaShifted * v) % 30;
+                    if (v === 1) { targetSign = Math.floor(lagnaShifted / 30); ascDeg = lagnaShifted % 30; }
+                    lagnaDeg = targetSign * 30 + ascDeg;
+                    chart[targetSign].push({ n: "ASC", d: ascDeg, r: false, isAsc: true });
+                }
+
+                pNames.forEach(p => {
+                    const deg = planetDegs[p];
+                    const label = (p === "Surya") ? "Sy" : p.substring(0,2);
+                    const pureZodiacSign = getVSign(shiftedPlanets[p], v);
+
+                    if (modeKP) {
+                        let house = Math.floor(deg / 30);
+                        let houseDeg = deg % 30;
+                        const ascDeg = (lagnaShifted * v) % 30;
+                        let kpShift = (SHIFTED_LAGNA && ascDeg >= 15) ? 1 : 0;
+                        house = (house + kpShift) % 12;
+                        chart[house].push({ n: label, d: houseDeg, r: d.planets_retro[p] || false, isAsc: false, pureSign: pureZodiacSign });
+                    } else {
+                        const targetSign = getVSign(deg, v);
+                        const planetDeg = (deg * v) % 30;
+                        chart[targetSign].push({ n: label, d: planetDeg, r: d.planets_retro[p] || false, isAsc: false, pureSign: targetSign });
+                    }
+                });
+
+                chart.forEach((h, i) => i <= 5 ? h.sort((a,b) => a.d - b.d) : h.sort((a,b) => b.d - a.d));
+                window._vargaChartStore[v] = chart;
+                
+                let ascIndex = 0;
+                for (let i = 0; i < 12; i++) { if (chart[i].some(p => p.isAsc)) { ascIndex = i; break; } }
+                window._ascSigns[v] = ascIndex;
+            });
+
+            buildFullDasha("vimChandra", moonShifted);
+            buildFullDasha("vimLagna", lagnaShifted);
+            renderSpecificChart();
+			updateDirectionalChart();
+        }
+
+        // --- Exact Lordship Rendering Logic ---
+        function renderChartUI(v, chart, container) {
+            const card = document.createElement('div'); 
+            card.className = 'varga-card';
+            card.innerHTML = `<div class="varga-title">D-${v}</div>`;
+
+            const k = document.createElement('div'); 
+            k.className = 'kundali';
+            const m = [11, 0, 1, 2, 10, -1, -1, 3, 9, -1, -1, 4, 8, 7, 6, 5];
+
+            let ascIndex = window._ascSigns[v] ?? 0;
+
+            function getPlanetLordship(pCode) {
+                const signLords = { 1:"Ma",2:"Ve",3:"Bu",4:"Ch",5:"Sy",6:"Bu",7:"Ve",8:"Ma",9:"Ju",10:"Sa",11:"Sa",12:"Ju" };
+                const ascSign1to12 = ascIndex + 1;
+                
+                function housesOfLord(lord) {
+                    const arr = [];
+                    for(let h=1; h<=12; h++) {
+                        const signOfHouse = ((ascSign1to12 + h - 2) % 12) + 1;
+                        if(signLords[signOfHouse] === lord) arr.push(h);
+                    }
+                    return arr;
+                }
+
+                if(pCode === "Ra" || pCode === "Ke") {
+                    let signPlaced = null;
+                    let pObj = null;
+                    for(let i=0; i<12; i++) {
+                        pObj = chart[i].find(p => p.n === pCode);
+                        if(pObj) break;
+                    }
+                    if(!pObj) return [];
+                    
+                    if(pObj.pureSign !== undefined) {
+                        signPlaced = pObj.pureSign + 1;
+                    } else {
+                        for(let i=0; i<12; i++) {
+                            if(chart[i].includes(pObj)) { signPlaced = i + 1; break; }
+                        }
+                    }
+                    
+                    const dispositor = signLords[signPlaced];
+                    return housesOfLord(dispositor);
+                }
+                return housesOfLord(pCode);
+            }
+
+            m.forEach(idx => {
+                const h = document.createElement('div'); 
+                h.className = 'house';
+
+                if (idx === -1) {
+                    if (!card.querySelector('.center-box')) {
+                        const cb = document.createElement('div'); 
+                        cb.className = 'center-box'; 
+                        cb.innerText = `D${v}`;
+                        k.appendChild(cb);
+                    }
+                } else {
+                    // CALCULATE ROTATED HOUSE NUMBER BASED ON PIVOT
+                    let originalHouseNum = ((idx - ascIndex + 12) % 12) + 1;
+                    let displayHouseNum = ((originalHouseNum - currentPivot + 12) % 12) + 1;
+
+                    if(idx === ascIndex) h.classList.add("asc-house");
+                    h.innerHTML += `<div class="house-num">${displayHouseNum}</div>`;
+
+                    const useKN = document.getElementById("modeKN")?.checked;
+                    const showLordship = document.getElementById("showLordship")?.checked;
+
+                    chart[idx].forEach(p => {
+                        let lineClass = p.isAsc ? "p-line asc-line" : "p-line";
+                        let displayStr = "";
+
+                        if (p.isAsc) {
+                            displayStr = `ASC ${Math.floor(p.d)}°${Math.floor((p.d*60)%60).toString().padStart(2,'0')}′`;
+                        } else {
+                            const name = useKN ? (planetNameMapKN[p.n] || p.n) : p.n;
+                            const r = (!useKN && p.r && !showLordship) ? ' (R)' : '';
+                            
+                            if (showLordship) {
+                                // Match the text to the rotated house number
+                                let lordshipsArr = getPlanetLordship(p.n).filter(x => x !== "-" && x != null);
+                                let uniqueLords = [...new Set(lordshipsArr)].sort((a, b) => Number(a) - Number(b));
+                                let lordStr = uniqueLords.length > 0 ? `${displayHouseNum}-${uniqueLords.join(",")}` : `${displayHouseNum}`;
+                                
+                                displayStr = `${name} ${Math.floor(p.d)}° - ${lordStr}`;
+                            } else {
+                                displayStr = `${name} ${Math.floor(p.d)}°${Math.floor((p.d*60)%60).toString().padStart(2,'0')}′${r}`;
+                            }
+                        }
+                        h.innerHTML += `<div class="${lineClass}">${displayStr}</div>`;
+                    });
+                    k.appendChild(h);
+                }
+            });
+            card.appendChild(k);
+            container.appendChild(card);
+        }
+
+
+
+
+
+
+
+
+        function renderSpecificChart() {
+            const sel = document.getElementById("specificChartSelect");
+            const container = document.getElementById("singleKundaliContainer");
+            if (!sel || !container || !window._vargaChartStore) return;
+
+            const v = parseInt(sel.value);
+            const chartData = window._vargaChartStore[v];
+            if (!chartData) return;
+
+            container.innerHTML = "";
+            const tempDiv = document.createElement("div");
+            tempDiv.style.width = "100%";
+            tempDiv.style.maxWidth = "800px";
+            renderChartUI(v, chartData, tempDiv);
+            
+            if(tempDiv.firstChild) {
+                container.appendChild(tempDiv.firstChild);
+            }
+
+            // Sync the directional chart automatically based on the master selector
+            updateDirectionalChart(); 
+        }
+
+        function formatDateSmart(d){
+            if(!d) return "";
+            const shortMode = document.getElementById("modeDateHide")?.checked;
+            const y = d.getFullYear();
+            const mNum = String(d.getMonth()+1).padStart(2,"0");
+            const day = String(d.getDate()).padStart(2,"0");
+            const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+            if(shortMode) return `${y}-${months[d.getMonth()]}`;
+            return `${y}-${mNum}-${day}`;
+        }
+
+
+
+
+
+
+
+/* =========================================================
+           LOCKED VIMSHOTTARI GRID - PREVENTS EXPAND/CONTRACT JITTER
+        ========================================================= */
+        function buildFullDasha(containerId, baseDeg){
+            const box = document.getElementById(containerId);
+            box.innerHTML = "";
+            if(!currentDateTime) return;
+
+            const MS_YEAR = 365.25*24*60*60*1000;
+            const nakSize = 360/27;
+            let nakIndex = Math.floor(baseDeg/nakSize);
+            let startLord = VIM_ORDER[nakIndex%9];
+            let frac = (baseDeg%nakSize)/nakSize;
+            let elapsedYears = VIM_YEARS[startLord]*frac;
+            
+            let birth = new Date(currentDateTime);
+            let mahaStart = new Date(birth.getTime() - elapsedYears*MS_YEAR);
+
+            let startIndex = VIM_ORDER.indexOf(startLord);
+            let order = [...VIM_ORDER.slice(startIndex),...VIM_ORDER.slice(0,startIndex)];
+
+            // THE FIX: minmax(0, Xfr) strictly locks the columns so they don't jump when text changes size
+            const GRID_STYLE = `
+			display:grid;
+			grid-template-columns: 24px 2.5fr 1.5fr 1fr 20px 1.5fr 1fr;
+			align-items:center;
+			column-gap:14px;
+			width:100%;
+			box-sizing:border-box;
+			`;
+
+            const hideAllAge = document.getElementById("hideAllAge")?.checked;
+            const hideBhuktiAge = document.getElementById("hideBhuktiAge")?.checked;
+            const useKN = document.getElementById("modeKN")?.checked;
+
+            let mahaCounter = 0; // <-- RESTORED: Tracks the very first row
+
+            order.forEach(mahaLord => {
+                let mahaYears = VIM_YEARS[mahaLord];
+                let mahaEnd = new Date(mahaStart.getTime()+mahaYears*MS_YEAR);
+                
+                let ageStart = Math.floor((mahaStart - birth)/MS_YEAR);
+                let ageEnd   = Math.floor((mahaEnd - birth)/MS_YEAR);
+                if(ageStart < 0) ageStart = 0;
+                if(ageEnd < 0) ageEnd = 0;
+
+                const showMahaAge = !hideAllAge;
+                
+                let mahaRow = document.createElement("div");
+                mahaRow.dataset.s = mahaStart; mahaRow.dataset.e = mahaEnd; mahaRow.dataset.l = 1;
+                mahaRow.className = "vim-maha"; 
+                mahaRow.style = GRID_STYLE + "cursor:pointer; padding:6px 8px; margin:6px 0 3px 0; border-radius:6px;";
+                
+                // RESTORED: If it's the first row (mahaCounter === 0), print originalDateTime (Birth Date)
+                mahaRow.innerHTML = `
+                    <div class="vimSym"></div>
+                    <div style="${useKN ? "font-weight:900;" : "font-weight:600;"}">
+                        ${useKN ? "ಮಹಾದಶೆ – " + KN_NAMES[mahaLord] : "Maha – " + EN_NAMES[mahaLord]}
+                    </div>
+                    <div>${formatDateSmart(mahaCounter === 0 && originalDateTime ? originalDateTime : mahaStart)}</div>
+                    <div>${showMahaAge ? `(${ageStart}y)` : ''}</div>
+                    <div style="text-align:center; color:var(--text-muted);">→</div>
+                    <div>${formatDateSmart(mahaEnd)}</div>
+                    <div>${showMahaAge ? `(${ageEnd}y)` : ''}</div>
+                `;
+
+                let bhuktiBox = document.createElement("div");
+                bhuktiBox.style.display = "none";
+                bhuktiBox.style.marginLeft = "0"; 
+
+                let bIndex = VIM_ORDER.indexOf(mahaLord);
+                let bhuktiOrder = [...VIM_ORDER.slice(bIndex), ...VIM_ORDER.slice(0, bIndex)];
+                let bhuktiStart = new Date(mahaStart);
+
+                bhuktiOrder.forEach(bhuktiLord => {
+                    let bhuktiYears = mahaYears*(VIM_YEARS[bhuktiLord]/120);
+                    let bhuktiEnd = new Date(bhuktiStart.getTime()+bhuktiYears*MS_YEAR);
+                    
+                    let bAgeStart = Math.floor((bhuktiStart - birth)/MS_YEAR);
+                    let bAgeEnd   = Math.floor((bhuktiEnd - birth)/MS_YEAR);
+                    if(bAgeStart < 0) bAgeStart = 0;
+                    if(bAgeEnd < 0) bAgeEnd = 0;
+
+                    const showBhuktiAge = !hideAllAge && !hideBhuktiAge;
+
+                    let bhuktiRow = document.createElement("div");
+                    bhuktiRow.dataset.s = bhuktiStart; bhuktiRow.dataset.e = bhuktiEnd; bhuktiRow.dataset.l = 2;
+                    bhuktiRow.className = "vim-bhukti"; 
+                    bhuktiRow.style = GRID_STYLE + "cursor:pointer; padding:4px 6px; margin:2px 0; border-radius:4px;";
+
+                    bhuktiRow.innerHTML = `
+                        <div class="vimSym"></div>
+                        <div style="${useKN ? "font-weight:900;" : "font-weight:500;"}; padding-left:10px;">
+                            ${useKN ? "ಭುಕ್ತಿ – " + KN_NAMES[bhuktiLord] : "Bhukti – " + EN_NAMES[bhuktiLord]}
+                        </div>
+                        <div>${formatDateSmart(bhuktiStart)}</div>
+                        <div>${showBhuktiAge ? `(${bAgeStart}y)` : ''}</div>
+                        <div style="text-align:center; color:var(--text-muted);">→</div>
+                        <div>${formatDateSmart(bhuktiEnd)}</div>
+                        <div>${showBhuktiAge ? `(${bAgeEnd}y)` : ''}</div>
+                    `;
+
+                    let antaraBox = document.createElement("div");
+                    antaraBox.style.display = "none";
+
+                    let aIndex = VIM_ORDER.indexOf(bhuktiLord);
+                    let antaraOrder = [...VIM_ORDER.slice(aIndex), ...VIM_ORDER.slice(0, aIndex)];
+                    let antaraStart = new Date(bhuktiStart);
+
+                    antaraOrder.forEach(antaraLord => {
+                        let antaraYears = bhuktiYears*(VIM_YEARS[antaraLord]/120);
+                        let antaraEnd = new Date(antaraStart.getTime()+antaraYears*MS_YEAR);
+
+                        let line = document.createElement("div");
+                        line.dataset.s = antaraStart; line.dataset.e = antaraEnd; line.dataset.l = 3;
+                        line.className = "vim-antara"; 
+                        line.style = GRID_STYLE + "padding:3px 6px; margin:1px 0; border-radius:3px;";
+
+                        line.innerHTML = `
+                            <div class="vimSym"></div>
+                            <div style="${useKN ? "font-weight:900;" : "font-weight:500;"}; padding-left:20px;">
+                                ${useKN ? "ಅಂತರ – " + KN_NAMES[antaraLord] : "Antara – " + EN_NAMES[antaraLord]}
+                            </div>
+                            <div>${formatDateSmart(antaraStart)}</div>
+                            <div></div>
+                            <div style="text-align:center; color:var(--text-muted);">→</div>
+                            <div>${formatDateSmart(antaraEnd)}</div>
+                            <div></div>
+                        `;
+                        antaraBox.appendChild(line);
+                        antaraStart = antaraEnd;
+                    });
+
+                    bhuktiRow.onclick = (e) => {
+                        e.stopPropagation();
+                        const levelLimit = parseInt(document.getElementById("expandLevel")?.value || "2");
+                        box.querySelectorAll(".vim-bhukti").forEach(r=>r.classList.remove("active"));
+                        bhuktiRow.classList.add("active");
+
+                        if(levelLimit === 2){
+                            if(currentOpenBhuktiBox[containerId]) currentOpenBhuktiBox[containerId].style.display = "none";
+                            currentOpenBhuktiBox[containerId] = null;
+                            return;
+                        }
+
+                        const isOpen = antaraBox.style.display === "block";
+                        if(currentOpenBhuktiBox[containerId] && currentOpenBhuktiBox[containerId]!==antaraBox) currentOpenBhuktiBox[containerId].style.display="none";
+                        antaraBox.style.display = isOpen ? "none" : "block";
+                        currentOpenBhuktiBox[containerId] = antaraBox.style.display==="block" ? antaraBox : null;
+                    };
+
+                    bhuktiBox.appendChild(bhuktiRow);
+                    bhuktiBox.appendChild(antaraBox);
+                    bhuktiStart = bhuktiEnd;
+                });
+
+                mahaRow.onclick = () => {
+                    const isOpen = bhuktiBox.style.display==="block";
+                    box.querySelectorAll(".vim-maha").forEach(r=>r.classList.remove("active"));
+                    if(currentOpenMahaBox[containerId] && currentOpenMahaBox[containerId]!==bhuktiBox) currentOpenMahaBox[containerId].style.display="none";
+                    bhuktiBox.style.display = isOpen ? "none" : "block";
+                    if(!isOpen) mahaRow.classList.add("active");
+                    currentOpenMahaBox[containerId] = bhuktiBox.style.display==="block" ? bhuktiBox : null;
+                };
+
+                box.appendChild(mahaRow);
+                box.appendChild(bhuktiBox);
+                mahaStart = mahaEnd;
+                mahaCounter++; // <-- RESTORED: Increments so only the first row gets the birth date
+            });
+            
+            highlightTodayVim();
+        }
+
+
+
+
+
+
+        function highlightTodayVim(){
+            const today = new Date();
+            document.querySelectorAll(".vimSym").forEach(s=>s.textContent="");
+            const containers=["vimChandra","vimLagna"];
+            containers.forEach(id=>{
+                let nodes=[...document.querySelectorAll("#"+id+" div")]
+                    .filter(n=>n.dataset && n.dataset.s)
+                    .filter(n => today>=new Date(n.dataset.s) && today< new Date(n.dataset.e))
+                    .sort((a,b)=>a.dataset.l-b.dataset.l);
+                nodes.forEach(n=>{
+                    let sym=n.querySelector(".vimSym");
+                    if(sym){ sym.textContent=VIM_SYMBOLS[n.dataset.l] || ""; }
+                });
+            });
+        }
+
+        function setTodayVimDate(){
+            const input = document.getElementById("vimFindDate");
+            if(!input) return;
+            const now = new Date();
+            input.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+        }
+
+        function findVimDate(){
+            const val = document.getElementById("vimFindDate")?.value;
+            if(!val) return;
+            const target = new Date(val+"T00:00:00");
+            ["vimChandra","vimLagna"].forEach(id => expandVimForDate(id, target));
+            highlightTodayVim();
+        }
+
+        function collapseVim(){
+            ["vimChandra","vimLagna"].forEach(id => {
+                const container = document.getElementById(id);
+                if(!container) return;
+                container.querySelectorAll(".vim-maha,.vim-bhukti,.vim-antara").forEach(el=>el.classList.remove("active"));
+                [...container.children].forEach(el=>{ if(!el.classList.contains("vim-maha")) el.style.display="none"; });
+            });
+        }
+
+        function expandVimForDate(containerId,targetDate){
+            const container = document.getElementById(containerId);
+            if(!container) return;
+            const levelLimit = parseInt(document.getElementById("expandLevel")?.value || "2");
+
+            container.querySelectorAll(".vim-maha,.vim-bhukti,.vim-antara").forEach(el=>el.classList.remove("active"));
+            [...container.children].forEach(el=>{ if(!el.classList.contains("vim-maha")) el.style.display="none"; });
+
+            const matches = [...container.querySelectorAll("[data-s]")].filter(row=>{
+                const s = new Date(row.dataset.s); const e = new Date(row.dataset.e);
+                return targetDate >= s && targetDate < e;
+            }).sort((a,b)=>parseInt(a.dataset.l)-parseInt(b.dataset.l));
+
+            matches.forEach(row=>{
+                const level = parseInt(row.dataset.l);
+                row.classList.add("active");
+                if(level === 1){
+                    const bhuktiBox = row.nextElementSibling;
+                    if(bhuktiBox){ bhuktiBox.style.display="block"; currentOpenMahaBox[containerId]=bhuktiBox; }
+                }
+                if(level === 2){
+                    const antaraBox = row.nextElementSibling;
+                    if(antaraBox){
+                        if(levelLimit === 3){ antaraBox.style.display="block"; currentOpenBhuktiBox[containerId]=antaraBox; }
+                        else { antaraBox.style.display="none"; currentOpenBhuktiBox[containerId]=null; }
+                    }
+                }
+            });
+        }
+
+        window.addEventListener("load", () => {
+            setTodayVimDate(); 
+            initChartDropdown();
+        });
+
+    </script>
+	
+	
+	
+	
+	
+	
+	
+	
+<div class="island-card" id="directionalModule">
+        <div class="island-title" style="cursor: pointer; justify-content: flex-start; font-size: 1.4rem; border-bottom: none; margin-bottom: 5px;" onclick="toggleSection('directionalContent', this)">
+            DIRECTIONAL CHART ▼
+        </div>
+        
+        <div id="directionalContent" style="display: block;">
+            <div style="text-align:center; margin-bottom: 25px; display: flex; justify-content: center; align-items: center; gap: 30px; border-bottom: 1px solid var(--card-border); padding-bottom: 20px;">
+                <label class="toggle-label toggle-active" style="cursor:pointer; font-size: 14px;">
+                    <input type="checkbox" id="dirModeToggle" checked onchange="updateDirectionalChart()"> ASC Based Directions
+                </label>
+            </div>
+            <div id="directionalGridContainer"></div>
+        </div>
+    </div>
+	
+	
+	
+<script>
+/* =========================================================
+           STANDALONE DIRECTIONAL CHART LOGIC
+        ========================================================= */
+        function initDirDropdown() {
+            const sel = document.getElementById("dirChartSelect");
+            if(sel) {
+                sel.innerHTML = "";
+                const customOrder = [1, 9, 10, 60, 2, 3, 4, 7, 12, 16, 20, 24, 27, 30, 40, 45]; 
+                customOrder.forEach(v => {
+                    const op = document.createElement("option");
+                    op.value = v; op.textContent = "D" + v;
+                    sel.appendChild(op);
+                });
+                sel.value = 1; 
+            }
+        }
+
+
+
+
+
+
+	let currentPivot = 1;
+
+			function setPivot(num) {
+				currentPivot = num;
+				for(let i = 1; i <= 12; i++) {
+					const btn = document.getElementById('pivotBtn' + i);
+					if(btn) {
+						if(i === num) btn.classList.add('active');
+						else btn.classList.remove('active');
+					}
+				}
+				// Trigger the master render so the Kundali house numbers update too
+				renderSpecificChart();
+			}
+
+
+
+
+
+
+
+
+
+
+
+		function updateDirectionalChart() {
+    const sel = document.getElementById("specificChartSelect");
+    const container = document.getElementById("directionalGridContainer");
+    
+    if (!sel || !container || !window._vargaChartStore) return;
+
+    const v = parseInt(sel.value);
+    const chart = window._vargaChartStore[v];
+    if (!chart) return;
+
+    const useAscMode = document.getElementById('dirModeToggle')?.checked;
+    const useKN = document.getElementById("modeKN")?.checked;
+    
+    // Get the dynamic Ascendant index based on KP / Sign2Sign
+    const ascIndex = window._ascSigns[v] ?? 0;
+
+    const dirs = { "EAST": [], "SOUTH": [], "WEST": [], "NORTH": [] };
+
+    // Iterate directly through the chart array to respect dynamic house placements
+    for (let i = 0; i < 12; i++) {
+        chart[i].forEach(p => {
+            if (!p.isAsc) {
+                let baseHouse;
+
+                if (useAscMode) {
+                    // ASC BASED: Calculate house strictly based on its array position relative to Ascendant
+                    // This naturally applies KP shifts if KP mode is active, or Sign2Sign if active.
+                    baseHouse = ((i - ascIndex + 12) % 12) + 1;
+                } else {
+                    // ZODIAC BASED: Lock strictly to Zodiac Sign (Aries=1, Taurus=2, etc.)
+                    baseHouse = p.pureSign + 1;
+                }
+                
+                // Apply the mathematically rotated pivot
+                let groupIdentifier = ((baseHouse - currentPivot + 12) % 12) + 1;
+
+                let targetDir = "";
+                if ([1, 5, 9].includes(groupIdentifier)) targetDir = "EAST";
+                else if ([2, 6, 10].includes(groupIdentifier)) targetDir = "SOUTH";
+                else if ([3, 7, 11].includes(groupIdentifier)) targetDir = "WEST";
+                else if ([4, 8, 12].includes(groupIdentifier)) targetDir = "NORTH";
+
+                dirs[targetDir].push({ ...p });
+            }
+        });
+    }
+
+    const getPivotLabel = (g1, g2, g3) => {
+        const h1 = ((g1 - 1 + currentPivot - 1 + 12) % 12) + 1;
+        const h2 = ((g2 - 1 + currentPivot - 1 + 12) % 12) + 1;
+        const h3 = ((g3 - 1 + currentPivot - 1 + 12) % 12) + 1;
+        return `${h1}, ${h2}, ${h3}`;
+    };
+
+    const renderBox = (dirName, numbers) => {
+        let boxHtml = `
+        <div style="background: rgba(0,0,0,0.3); border: 2px solid var(--card-border); padding: 15px; display: flex; flex-direction: column; min-height: 160px; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
+            <div style="text-align: center; color: var(--accent-secondary); font-weight: bold; font-size: 1.1em; border-bottom: 1px solid var(--card-border); padding-bottom: 5px; margin-bottom: 10px;">
+                ${dirName} <span style="font-size: 0.85em; opacity: 0.9;">(${numbers})</span>
+            </div>`;
+            
+        dirs[dirName].sort((a, b) => a.d - b.d);
+        if (dirs[dirName].length === 0) {
+            boxHtml += `<div style="text-align:center; color: var(--text-muted); flex-grow: 1; display: flex; align-items: center; justify-content: center;">Empty</div>`;
+        } else {
+            dirs[dirName].forEach(p => {
+                const name = useKN ? (planetNameMapKN[p.n] || p.n) : p.n;
+                const r = (!useKN && p.r) ? ' (R)' : '';
+                const dStr = `${Math.floor(p.d)}°${Math.floor((p.d*60)%60).toString().padStart(2,'0')}′`;
+                boxHtml += `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 14px; font-weight: 600;">
+                    <span style="color: var(--text-main);">${name}${r}</span>
+                    <span style="color: var(--accent-primary); font-family: monospace;">${dStr}</span>
+                </div>`;
+            });
+        }
+        boxHtml += `</div>`;
+        return boxHtml;
+    };
+
+    container.innerHTML = `
+    <div style="display: grid; grid-template-columns: 1fr 1.2fr 1fr; grid-template-rows: auto auto auto; max-width: 800px; margin: 0 auto; gap: 0;">
+        <div style="padding: 5px;"></div>
+        <div style="padding: 5px;">${renderBox('NORTH', getPivotLabel(4, 8, 12))}</div>
+        <div style="padding: 5px;"></div>
+
+        <div style="padding: 5px;">${renderBox('WEST', getPivotLabel(3, 7, 11))}</div>
+        <div style="padding: 5px; border: 2px solid var(--card-border); background: rgba(15, 23, 42, 0.4);"></div>
+        <div style="padding: 5px;">${renderBox('EAST', getPivotLabel(1, 5, 9))}</div>
+
+        <div style="padding: 5px;"></div>
+        <div style="padding: 5px;">${renderBox('SOUTH', getPivotLabel(2, 6, 10))}</div>
+        <div style="padding: 5px;"></div>
+    </div>`;
+}
+			
+		
+		
+		
+		
+		
+	
+</script>	
+
+
+
+
+
+
+
+
+
+<div class="island-card" id="predictionModule">
+        <div class="island-title" style="cursor: pointer; justify-content: flex-start; font-size: 1.4rem; border-bottom: none; margin-bottom: 5px; color: var(--success);" onclick="toggleSection('bnnContent', this)">
+            BNN PREDICTION MODULE ▼
+        </div>
+        
+        <div id="bnnContent" style="display: block;">
+            <div style="text-align:center; margin-bottom: 15px; color: var(--text-muted); font-size: 13px; border-bottom: 1px solid var(--card-border); padding-bottom: 15px;">
+                Auto-scanning ALL Trines (1,5,9 | 2,6,10 | 3,7,11 | 4,8,12) for combinations.
+            </div>
+
+            <div id="predictionResults" style="display: flex; flex-direction: column; gap: 8px; max-height: 500px; overflow-y: auto; padding-right: 10px;">
+                <div style="text-align:center; padding: 20px; color: var(--text-muted);">Waiting for chart data...</div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+        // p = Planets required
+        // h = Specific true houses required (Evaluated via KP or Sign2Sign based on active mode)
+        // s = Specific Zodiac signs required (1=Aries, 2=Taurus, 3=Gemini, etc.)
+        const bnnRules = [
+            // ================= EXISTING RULES =================
+            { p: ["Sy", "Ch"], h: [4, 5], res: "Blood Pressure / Heart Problems" },
+            { p: ["Sy", "Ch", "Ve"], h: [2], res: "Eye Problems" },
+            { p: ["Sy", "Ch", "Ve"], h: [12], res: "Sleeping Disorders" },
+            { p: ["Sy", "Ch", "Sa"], h: [], res: "Service / Government Benefits OR Late Marriage" },
+            { p: ["Sy", "Ch", "Sa"], h: [6], res: "Government Job" },
+            { p: ["Sy", "Ma", "Sa"], h: [], res: "Service / Government Benefits" },
+            { p: ["Sy", "Ma"], h: [10], res: "High Status in the Society" },
+            { p: ["Sy", "Ma", "Sa"], h: [6], res: "Government Job" },
+            { p: ["Sy", "Ch", "Ke"], h: [12], res: "Medicine / Medical Department" },
+            { p: ["Sy", "Ju", "Ke"], h: [12], res: "Medicine / Medical Department" },
+            { p: ["Sy", "Ch", "Ju"], h: [5], res: "Spiritual Related Profession" },
+            { p: ["Sy", "Ju"], h: [1], res: "Good Health" },
+            { p: ["Sy", "Ju", "Sa"], h: [], res: "Politicians" },
+            { p: ["Sy", "Bu", "Ju"], h: [9], res: "Primary Education" },
+            { p: ["Sy", "Bu", "Ju"], h: [11], res: "Higher Education & High Status" },
+            { p: ["Sy", "Bu", "Ke"], h: [], res: "Primary Education with problems" },
+            { p: ["Sy", "Bu", "Ju"], h: [], res: "Accounts / Mathematicians" },
+            { p: ["Sy", "Sa"], h: [], res: "Baldness (If 1st Lord is Weak)" },
+            { p: ["Ch", "Ju"], h: [11], res: "Staying with Mother" },
+            { p: ["Ch", "Sa"], h: [2, 7], res: "Delay in Marriage" },
+            { p: ["Ch", "Ma", "Ra"], h: [], res: "Marriage Related Problems" },
+            { p: ["Ch", "Ve", "Ra"], h: [], res: "Illegal Affairs" },
+            { p: ["Ch", "Ve", "Ra"], h: [2], res: "Alcoholic" },
+            { p: ["Ch", "Ve", "Ke"], h: [], res: "Marriage Related Problems / Divorce (Male)" },
+            { p: ["Ch", "Ma", "Ke"], h: [], res: "Marriage Related Problems / Divorce (Female)" },
+            { p: ["Ch", "Bu"], h: [9], res: "Astrology" },
+            { p: ["Ch", "Bu"], h: [10], res: "Educational Institutions" },
+            { p: ["Ch", "Bu", "Ju"], h: [], res: "Occult Science / Astrology" },
+            { p: ["Ch", "Bu"], h: [12], res: "Interested in Astrology" },
+            { p: ["Ch", "Bu", "Ju"], h: [3], res: "Interested in Astrology" },
+            { p: ["Ch", "Ju", "Ke"], h: [], res: "Interested in Spiritual Subjects" },
+            { p: ["Ch", "Ke"], h: [1], res: "Mind / Madness" },
+            { p: ["Ma", "Ju"], h: [1, 9], res: "Happy Married Life" },
+            { p: ["Ma", "Sa"], h: [10], res: "Police Department" },
+            { p: ["Ma", "Sa"], h: [6], res: "Anaemia" },
+            { p: ["Ma", "Sa"], h: [9], res: "2nd Marriage" },
+            { p: ["Ma", "Sa", "Bu"], h: [], res: "Primary Education with problems OR Love Affairs" },
+            { p: ["Ma", "Bu"], h: [5], res: "Fell in Love" },
+            { p: ["Ma", "Ve", "Bu"], h: [], res: "Illegal Affairs" },
+            { p: ["Ma", "Bu", "Sa"], h: [], res: "Technical Subject" },
+            { p: ["Ma", "Sa", "Bu", "Ra"], h: [], res: "Engineering Related Subjects" },
+            { p: ["Ma", "Ve", "Ra"], h: [], res: "Court Cases" },
+            { p: ["Ma", "Ve", "Ra"], h: [6], res: "Failure in Court Cases" },
+            { p: ["Ma", "Ve", "Ju"], h: [6], res: "Success in Court Cases" },
+            { p: ["Bu", "Ju"], h: [], res: "Accounts" },
+            { p: ["Bu", "Ju"], h: [1, 10], res: "Good name and Fame in society" },
+            { p: ["Bu", "Ju"], h: [9], s: [3], res: "2nd Marriage (In Gemini Sign)" }, 
+            { p: ["Bu", "Ju"], h: [9], res: "Teachers / Professors" },
+            { p: ["Bu", "Ju", "Ke"], h: [], res: "Astrology Profession" },
+            { p: ["Bu", "Ju", "Ve"], h: [1], res: "Income in Astrology" },
+            { p: ["Bu", "Ve", "Ra"], h: [], res: "Illegal Affairs" },
+            { p: ["Bu", "Ve"], h: [5], res: "Fell in Love" },
+            { p: ["Bu", "Sa"], h: [3], res: "Loss of Property Documents" },
+            { p: ["Bu", "Ra"], h: [8], res: "Debts" },
+            { p: ["Bu", "Ke"], h: [6], res: "Love Failures" },
+            { p: ["Bu", "Sa", "Ke"], h: [], res: "Disturbance in Education" },
+            { p: ["Bu", "Sa", "Ra"], h: [12], res: "Impotent / Impotence Symptoms" },
+            { p: ["Bu", "Sa"], s: [3, 6, 9, 12], res: "Late Marriage / No Marriage in Life (Dual Signs)" },
+            { p: ["Ju", "Ve", "Bu"], h: [7], res: "Early Marriage" },
+            { p: ["Ju", "Ve"], h: [12], res: "Early Marriage" },
+            { p: ["Ju", "Ch", "Ke"], h: [7], res: "Marriage Period" },
+            { p: ["Ju", "Ma"], h: [1], res: "Social Service" },
+            { p: ["Ju", "Ve"], h: [1], res: "Good Health" },
+            { p: ["Ju", "Ch", "Ra"], h: [], res: "Foreign Travels" },
+            { p: ["Ju", "Ra"], h: [], res: "Foreign Travels (If 4th Lord is Weak)" },
+            { p: ["Ju", "Ch"], h: [9], res: "Long Journey" },
+            { p: ["Ju", "Ch", "Sa"], h: [12], res: "Foreign Travels" },
+            { p: ["Ju", "Ke"], h: [6], res: "Bank Loans" },
+            { p: ["Ju", "Sa", "Ke"], h: [6], res: "Progeny Related Issues" },
+            { p: ["Ju", "Sa", "Ra"], h: [5], res: "Progeny Related Issues" },
+            { p: ["Ju", "Ke"], h: [10], res: "Income in Spiritual Related Profession / Astrology" },
+            { p: ["Ju", "Ra"], h: [6], res: "Skin Related Problems" },
+            { p: ["Ve", "Ma"], h: [6], res: "Blood Related Issues (Female)" },
+            { p: ["Ve", "Ch"], h: [1], res: "Delay in Marriage" },
+            { p: ["Ve", "Ch"], h: [4], res: "Marriage Promised" },
+            { p: ["Ve", "Ju", "Sa"], h: [], res: "Wealth / Assets" },
+            { p: ["Ve", "Ju", "Sa"], h: [2], res: "More Wealth" },
+            { p: ["Ve", "Sa"], h: [7], res: "Delay in Marriage" },
+            { p: ["Ve", "Sa"], h: [1], res: "Happy Married Life" },
+            { p: ["Ve", "Ch", "Bu"], h: [5], res: "Cinema Field" },
+            { p: ["Ve", "Ma"], h: [3], res: "Singers" },
+            { p: ["Ve", "Ma", "Bu"], h: [8], res: "Kidney / Urinary Related Problems" },
+            { p: ["Ve", "Sa"], h: [6], res: "Diabetic / Eye Related Problems" },
+            { p: ["Ve", "Ra"], h: [7], res: "Illegal Affairs" },
+            { p: ["Ve", "Ra"], h: [6], res: "Skin Problems" },
+            { p: ["Ve", "Ma"], h: [7, 8], res: "Diseases of Penis / Vagina (If Weak)" },
+            { p: ["Sa", "Sy", "Ve"], h: [1, 8], res: "Longevity will be above 90 years" },
+            { p: ["Sa", "Ju", "Sy"], h: [9], res: "Politicians" },
+            { p: ["Sa", "Ch"], h: [1], res: "Health Problems" },
+            { p: ["Sa", "Ra"], h: [8], res: "Problems in Business / Profession" },
+            { p: ["Sa", "Ma", "Ra"], h: [4], res: "Lung Diseases / Asthama" },
+            { p: ["Sa", "Ch", "Ra"], h: [], res: "Health Problems" },
+            { p: ["Sa", "Ra"], h: [12], res: "Back Pains / Surgeries" },
+            { p: ["Sa", "Ke"], h: [2], res: "Huge Debts" },
+            { p: ["Sa", "Ch", "Ke"], h: [2], res: "Poverty" },
+            { p: ["Sa", "Ch", "Ma", "Ke"], h: [2], res: "Huge Debts / Poverty" },
+            { p: ["Sa", "Ch", "Ke"], h: [], res: "Death" },
+            { p: ["Sa", "Ch", "Ke"], h: [4], res: "End of the life" },
+
+            // ================= NEW RULES (TEXT & PDF CORE COMBINATIONS) =================
+            { p: ["Ju", "Sy", "Ch"], h: [], res: "Public visibility, Leadership, Teacher" },
+            { p: ["Ve", "Ra", "Sa"], h: [], res: "Wealth through unconventional/foreign career" },
+            { p: ["Ma", "Ke", "Ju"], h: [], res: "Spiritual protection, Martial arts/Protective service" },
+            { p: ["Ve", "Ma"], h: [], res: "Deep romantic drive, Passionate attraction" },
+            { p: ["Ve", "Bu"], s: [1, 5, 9], res: "Love marriage, Intellectual compatibility" },
+            { p: ["Sa", "Ve", "Ch"], h: [], res: "Enduring love marriage, Stable commitment" },
+            { p: ["Ve", "Ch", "Ma"], h: [], res: "Intense passion, Destined for love marriage" },
+            { p: ["Ve", "Ju", "Ch"], h: [], res: "Fulfilling love marriage, Shared goals" },
+            { p: ["Sy", "Ch"], h: [], res: "Strong mind, Public life" },
+            { p: ["Sy", "Ve"], h: [], res: "Artistic talents, Fame, Luxury" },
+            { p: ["Sy", "Ra"], h: [], res: "Sudden rise, Foreign connection" },
+            { p: ["Sy", "Ke"], h: [], res: "Spiritual orientation, Occult pursuits" },
+            { p: ["Ch", "Ma"], h: [], res: "Emotional impulsiveness, Travel" },
+            { p: ["Ch", "Bu"], h: [], res: "Strong intellect, Educational success" },
+            { p: ["Ch", "Ju"], h: [], res: "Philanthropy, Wisdom, Religious travel" },
+            { p: ["Ch", "Ve"], h: [], res: "Romantic, Artistic, Emotional relationships" },
+            { p: ["Ch", "Sa"], h: [], res: "Hard life, Depression, Healing abilities" },
+            { p: ["Ch", "Ra"], h: [], res: "Foreign travel, Psychological issues/Phobias" },
+            { p: ["Ch", "Ke"], h: [], res: "Spiritual, Research-minded, Tension" },
+            { p: ["Ma", "Bu"], h: [], res: "Logical skills, Technical education" },
+            { p: ["Ma", "Ju"], h: [], res: "Brotherly love, Quick success" },
+            { p: ["Ma", "Ve"], h: [], res: "Attractive, Arts/Music" },
+            { p: ["Ma", "Sa"], h: [], res: "Adjustment issues, Workplace stress" },
+            { p: ["Ma", "Ra"], h: [], res: "Risk, Aggression, Intercaste marriage" },
+            { p: ["Ma", "Ke"], h: [], res: "Separation, Strong intuition, Arguments" },
+            { p: ["Bu", "Ju"], h: [], res: "Wisdom, Educational/Business success" },
+            { p: ["Bu", "Ve"], h: [], res: "Fine arts, Business intelligence" },
+            { p: ["Bu", "Sa"], h: [], res: "Obstacles in education, Old age interests" },
+            { p: ["Bu", "Ra"], h: [], res: "Foreign degrees, Breaks in education" },
+            { p: ["Bu", "Ke"], h: [], res: "Nervousness, Erratic thinking" },
+            { p: ["Ju", "Ve"], h: [], res: "Wealthy family, Good education" },
+            { p: ["Ju", "Sa"], h: [], res: "Late success, Spiritual learning" },
+            { p: ["Ju", "Ra"], h: [], res: "Foreign travel, Sudden wealth" },
+            { p: ["Ju", "Ke"], h: [], res: "Mysticism, Detachment, Legal matters" },
+            { p: ["Ve", "Sa"], h: [], res: "Wealth after marriage, Independent spouse prosperity" },
+            { p: ["Ve", "Ra"], h: [], res: "Materialism, Unconventional relationships" },
+            { p: ["Ve", "Ke"], h: [], res: "Spiritual spouse, Detachment in relationship" },
+            { p: ["Sa", "Ra"], h: [], res: "Career instability, Sudden change" },
+            { p: ["Sa", "Ke"], h: [], res: "Detachment, Obstacles, Spiritual opportunities" },
+            { p: ["Sy", "Ma"], h: [], res: "Courage, Political fame, Aggressive personality" },
+            { p: ["Sy", "Bu"], h: [], res: "Intellectual fame, Communication skills" },
+            { p: ["Sy", "Ju"], h: [], res: "Blessings, Government support, High status" }
+        ];
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        function runPredictions() {
+    const container = document.getElementById("predictionResults");
+    const sel = document.getElementById("specificChartSelect");
+    
+    if (!container || !sel || !window._vargaChartStore) return;
+
+    const v = parseInt(sel.value);
+    const chart = window._vargaChartStore[v];
+    if (!chart) return;
+
+    const useAscMode = document.getElementById('dirModeToggle')?.checked;
+    const useKN = document.getElementById("modeKN")?.checked;
+    const ascIndex = window._ascSigns[v] ?? 0;
+    const pivot = typeof currentPivot !== 'undefined' ? currentPivot : 1;
+
+    const trines = { "EAST": { planets: [], details: [] }, "SOUTH": { planets: [], details: [] }, "WEST": { planets: [], details: [] }, "NORTH": { planets: [] , details: [] } };
+
+    for (let i = 0; i < 12; i++) {
+        chart[i].forEach(p => {
+            if (!p.isAsc) {
+                let actualSignNum = p.pureSign + 1; 
+                // 1. Calculate base house from Ascendant
+                let houseFromAsc = ((i - ascIndex + 12) % 12) + 1; 
+                // 2. APPLY PIVOT to get the house number you actually SEE on screen
+                let displayedHouseNum = ((houseFromAsc - pivot + 12) % 12) + 1;
+
+                let baseGroup = useAscMode ? displayedHouseNum : actualSignNum;
+                let groupIdentifier = ((baseGroup - 1 + 12) % 12) + 1; // Normalized to 1-12
+
+                let targetDir = "";
+                if ([1, 5, 9].includes(groupIdentifier)) targetDir = "EAST";
+                else if ([2, 6, 10].includes(groupIdentifier)) targetDir = "SOUTH";
+                else if ([3, 7, 11].includes(groupIdentifier)) targetDir = "WEST";
+                else if ([4, 8, 12].includes(groupIdentifier)) targetDir = "NORTH";
+
+                if (targetDir) {
+                    trines[targetDir].planets.push(p.n);
+                    trines[targetDir].details.push({
+                        planet: p.n,
+                        house: displayedHouseNum, // NOW MATCHES THE BOX NUMBERS
+                        sign: actualSignNum
+                    });
+                }
+            }
+        });
+    }
+
+    // ... (rest of the formatting code remains the same)
+
+
+            // Sync Header Text accurately to applied Pivot
+            const getPivotLabel = (g1, g2, g3) => {
+                const h1 = ((g1 - 1 + pivot - 1 + 12) % 12) + 1;
+                const h2 = ((g2 - 1 + pivot - 1 + 12) % 12) + 1;
+                const h3 = ((g3 - 1 + pivot - 1 + 12) % 12) + 1;
+                return `${h1}, ${h2}, ${h3}`;
+            };
+
+            const dirLabels = {
+                "EAST": useAscMode ? `EAST (Houses ${getPivotLabel(1, 5, 9)})` : "EAST (Aries, Leo, Saggi)",
+                "SOUTH": useAscMode ? `SOUTH (Houses ${getPivotLabel(2, 6, 10)})` : "SOUTH (Taurus, Virgo, Capri)",
+                "WEST": useAscMode ? `WEST (Houses ${getPivotLabel(3, 7, 11)})` : "WEST (Gemini, Libra, Aqua)",
+                "NORTH": useAscMode ? `NORTH (Houses ${getPivotLabel(4, 8, 12)})` : "NORTH (Cancer, Scorpio, Pisces)"
+            };
+
+            let html = `
+                <div style="text-align:center; margin-bottom: 15px; color: var(--accent-secondary); font-size: 13px; font-weight: bold; border-bottom: 1px solid var(--card-border); padding-bottom: 15px;">
+                    Currently Scanning Trines via: ${useAscMode ? "ASCENDANT HOUSES" : "ZODIAC SIGNS"}
+                </div>
+            `;
+
+            let matchCount = 0;
+            const signNames = ["Ari", "Tau", "Gem", "Can", "Leo", "Vir", "Lib", "Sco", "Sag", "Cap", "Aqu", "Pis"];
+
+            // Sort so combinations with more planets trigger first
+            const sortedRules = [...bnnRules].sort((a, b) => b.p.length - a.p.length);
+
+            sortedRules.forEach(rule => {
+                for (const [dirKey, data] of Object.entries(trines)) {
+                    const hasAllPlanets = rule.p.every(reqPlanet => data.planets.includes(reqPlanet));
+                    
+                    if (hasAllPlanets) {
+                        let houseMatch = true;
+                        let signMatch = true;
+                        let matchedHouses = [];
+                        let matchedSigns = [];
+
+                        // Look strictly at the specific planets required by this rule
+                        const relevantDetails = data.details.filter(d => rule.p.includes(d.planet));
+
+                        if (rule.h && rule.h.length > 0) {
+                            houseMatch = rule.h.some(reqHouse => relevantDetails.some(d => {
+                                if (d.house === reqHouse) { matchedHouses.push(reqHouse); return true; }
+                                return false;
+                            }));
+                        }
+
+                        if (rule.s && rule.s.length > 0) {
+                            signMatch = rule.s.some(reqSign => relevantDetails.some(d => {
+                                if (d.sign === reqSign) { matchedSigns.push(reqSign); return true; }
+                                return false;
+                            }));
+                        }
+
+                        if (houseMatch && signMatch) {
+                            matchCount++;
+                            const displayNames = rule.p.map(pCode => useKN ? (planetNameMapKN[pCode] || pCode) : pCode).join(" + ");
+                            
+                            let detailStr = "";
+                            let uHouses = [...new Set(matchedHouses)];
+                            let uSigns = [...new Set(matchedSigns)];
+
+                            if (rule.h && rule.h.length > 0 && uHouses.length > 0) {
+                                detailStr += ` [H: ${uHouses.join(",")}]`;
+                            }
+                            if (rule.s && rule.s.length > 0 && uSigns.length > 0) {
+                                detailStr += ` [Sign: ${uSigns.map(s => signNames[s-1]).join(",")}]`;
+                            }
+                            
+                            html += `
+                            <div style="background: rgba(0,0,0,0.3); border-left: 4px solid var(--accent-secondary); padding: 12px; border-radius: 4px; margin-bottom: 8px;">
+                                <div style="color: var(--accent-primary); font-size: 13px; font-weight: bold; margin-bottom: 4px; font-family: monospace;">
+                                    MATCH: [${displayNames}] in ${dirLabels[dirKey]}${detailStr}
+                                </div>
+                                <div style="color: var(--success); font-size: 15px; font-weight: 600;">
+                                    ► ${rule.res}
+                                </div>
+                            </div>`;
+                        }
+                    }
+                }
+            });
+
+            if (matchCount === 0) {
+                html += `<div style="text-align:center; padding: 20px; color: var(--text-muted);">No predictive combinations triggered for this chart.</div>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        // Ensuring Directional Toggle directly impacts Predictions without delay
+        document.addEventListener("DOMContentLoaded", () => {
+            const dirToggle = document.getElementById('dirModeToggle');
+            if (dirToggle) {
+                dirToggle.addEventListener('change', () => {
+                    if (typeof updateDirectionalChart === "function") updateDirectionalChart();
+                    runPredictions();
+                });
+            }
+        });
+
+        const _originalRenderChart = renderSpecificChart;
+        renderSpecificChart = function() {
+            const sel = document.getElementById("specificChartSelect");
+            const container = document.getElementById("singleKundaliContainer");
+            if (!sel || !container || !window._vargaChartStore) return;
+
+            const v = parseInt(sel.value);
+            const chartData = window._vargaChartStore[v];
+            if (!chartData) return;
+
+            container.innerHTML = "";
+            const tempDiv = document.createElement("div");
+            tempDiv.style.width = "100%";
+            tempDiv.style.maxWidth = "800px";
+            renderChartUI(v, chartData, tempDiv);
+            
+            if(tempDiv.firstChild) container.appendChild(tempDiv.firstChild);
+
+            if(typeof updateDirectionalChart === "function") updateDirectionalChart(); 
+            runPredictions();
+        };
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="island-card" id="venusPredictionModule">
+        <div class="island-title" style="cursor: pointer; justify-content: flex-start; font-size: 1.4rem; border-bottom: none; margin-bottom: 5px; color: #f472b6;" onclick="toggleSection('venusContent', this)">
+            VENUS MARRIAGE PREDICTIONS ▼
+        </div>
+        
+        <div id="venusContent" style="display: block;">
+            <div style="text-align:center; margin-bottom: 15px; color: var(--text-muted); font-size: 13px; border-bottom: 1px solid var(--card-border); padding-bottom: 15px;">
+                Analyzing Venus Sign Placement & Trine Combinations (BNN)
+            </div>
+
+            <div id="venusSignResult" style="margin-bottom: 15px;"></div>
+            
+            <div id="venusComboResults" style="display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; padding-right: 10px;">
+                <div style="text-align:center; padding: 20px; color: var(--text-muted);">Waiting for chart data...</div>
+            </div>
+        </div>
+    </div>
+
+
+
+<script>
+        /* =========================================================
+           VENUS BNN RULES DATA
+        ========================================================= */
+        const venusSignRules = {
+            1: "Native’s wife comes from decent restrictive family, she will be courageous. She loves her husband a lot, sometimes stubborn and angry. Native gets own house after marriage. Talkative nature, medium height with a triangular face.",
+            2: "The native’s wife is of beautiful, soft nature & intelligent. He is lucky after marriage. Gets monetary gains through financial transactions and acquires wealth from wife’s side.",
+            3: "His wife is intelligent and interested in sensual pleasures. Affectionate towards her kith & kin. Medium height with protruding face. Earns & spends well, sometimes double-minded.",
+            4: "Marries outside relatives circle. Good looking, quiet nature, art enthusiast. Sometimes gets a bad name for conflicting nature. Expects more love; family happiness is minimum.",
+            5: "Wife comes from prestigious family, strict in conduct. Highly egoistic, tendency to hoard jewels. Chance to get a Government job.",
+            6: "Talkative, blame-worthy, calculative nature. Good conversationalist. Medium height. Accumulates money by straining every nerve.",
+            7: "Belongs to relative circumstance. Giving and helping nature, but haughty behavior. Keeps family happy, good housewife.",
+            8: "Ruddy complexion, lean, strong, tallish. Stubborn and courageous. Not cooperative with relatives/father-in-law. Wife suffers from blood defects and overheated constitution.",
+            9: "Divine and dignified appearance, humility from high education. Husband is blessed. Wife suffers from cold.",
+            10: "Darkish ruddy complexion but good looking. Constantly unwell from cold. Native is affectionate towards her. Comes from a hard-working family.",
+            11: "Darkish red complexion, round face. Increase in income next year of marriage. Wife suffers from phlegm/cold. Quiet talker, gradual progress after marriage.",
+            12: "Narrow and beautiful face, appreciated for patience and good manners. The angel of fortune brings her wealth. Indicates great fortune in life."
+        };
+
+        const venusComboRules = [
+            // 3-Planet Combinations
+            { p: ["Ve", "Sy", "Ch"], res: "Wife's mind has tendency to help others, respectable family, authoritarian." },
+            { p: ["Ve", "Sy", "Ma"], res: "Strict and stubborn mentality, enterprising and egoistic personality." },
+            { p: ["Ve", "Sy", "Bu"], res: "Born in a prestigious family with a good character." },
+            { p: ["Ve", "Sy", "Ju"], res: "Beautiful divine appearance, acts as philosopher to others. Achieves great name, fame, and fortune." },
+            { p: ["Ve", "Sy", "Sa"], res: "Native prospers after marriage, wife has prospect to be self-earner or in Gov sector." },
+            { p: ["Ve", "Sy", "Ra"], res: "Rise in prosperity but danger to wife and father. Wealth through wife." },
+            { p: ["Ve", "Sy", "Ke"], res: "Accomplished, religious. Suffers kidney ailments, anemia, low BP. Can become a writer." },
+            { p: ["Ve", "Ch", "Sy"], res: "Faces problems and disappointments. Artistic, fond of family life. Fickle nature causing deceit." },
+            { p: ["Ve", "Ch", "Ma"], res: "Danger to life due to water/fire outside. Fickle minded. Stomach/uterus illness leading to surgery." },
+            { p: ["Ve", "Ch", "Bu"], res: "Native will have illicit connections causing mental trouble for wife. She has business skills, loves nature/holy places." },
+            { p: ["Ve", "Ch", "Ju"], res: "Overcomes estrangement. Wife initially faces hurdles but becomes wise. Intent on helping others. Indigestion issues." },
+            { p: ["Ve", "Ch", "Sa"], res: "Great housewife. Husband changes job. Affected by cough/lung infection. Husband may be suspicious." },
+            { p: ["Ve", "Ch", "Ra"], res: "Dissatisfaction. Wife affected by fear complex, nervous disease. Mental unrest for both, suspicion." },
+            { p: ["Ve", "Ch", "Ke"], res: "No fixity of mind, suffers hardships and blame, turns to salvation angle. Marriage brings success to native." },
+            { p: ["Ve", "Ma", "Sy"], res: "Haughty and rude, respects elders, BP issues. Native controlled by wife. Wife likely to get Gov benefits." },
+            { p: ["Ve", "Ma", "Ch"], res: "Capable of controlling husband. Loves him, but husband is fickle. Past life connection." },
+            { p: ["Ve", "Ma", "Bu"], res: "Stubborn, beautiful, attractive. Spirit of sacrifice. Suspicion can lead to disputes." },
+            { p: ["Ve", "Ma", "Ju"], res: "Stubborn but with patience/discretion. Self-motivated, interested in Vedic mantras." },
+            { p: ["Ve", "Ma", "Sa"], res: "Unhappy due to husband's disputes with co-borns. Suffers mental unrest for 4-5 years after marriage." },
+            { p: ["Ve", "Ma", "Ra"], res: "Hasty, impatient behavior. Danger from fire accidents and BP illness. Drive carefully." },
+            { p: ["Ve", "Ma", "Ke"], res: "Disputes but gets a good, helpful wife. Unnecessary worries ruin marital happiness." },
+            { p: ["Ve", "Bu", "Sy"], res: "Wife is very clever and intelligent. Native gets lots of help; wife helps her kith and kin." },
+            { p: ["Ve", "Bu", "Ch"], res: "Sweet-talking, charitable. Others suspect her character. Native will have illicit affairs." },
+            { p: ["Ve", "Bu", "Ma"], res: "Talkative, strict words, short temper. Average education. Skin diseases may occur." },
+            { p: ["Ve", "Bu", "Ju"], res: "Clever, qualified, engrossed in divine thought. Native enjoys life with wife and girlfriend." },
+            { p: ["Ve", "Bu", "Sa"], res: "Marriage at 27-28. Wife is intelligent, hardworking. Earns using knowledge." },
+            { p: ["Ve", "Bu", "Ra"], res: "Clever and intelligent. Victorious over unexpected hardships. Cooperates with husband." },
+            { p: ["Ve", "Bu", "Ke"], res: "Native may study law. Wife is clever but disputes with husband. Romantic thoughts/affairs." },
+            { p: ["Ve", "Ju", "Sy"], res: "Polite, respectable, fortunate. Prestige in society, devoted to God, does charity." },
+            { p: ["Ve", "Ju", "Ch"], res: "Divine contemplation but takes unnecessary advice, spoiling family happiness. Mental unrest." },
+            { p: ["Ve", "Ju", "Ma"], res: "Deeply devoted to God. Stubborn, imposes opinions. Possibility of surgery." },
+            { p: ["Ve", "Ju", "Bu"], res: "Happiness through two women. Wife is clever, wants to trade. Both achieve fame." },
+            { p: ["Ve", "Ju", "Sa"], res: "Prosperity after marriage by wife's luck. Wife is a guide, enterprising." },
+            { p: ["Ve", "Ju", "Ra"], res: "Blessed by God, overcomes great difficulties between ages 37-43." },
+            { p: ["Ve", "Ju", "Ke"], res: "Superstitious, blind faiths, worries over occult matters. Husband finds it hard to live with her." },
+            { p: ["Ve", "Sa", "Sy"], res: "Somewhat dull-witted but fortunate and self-earning." },
+            { p: ["Ve", "Sa", "Ch"], res: "Working in a distant place. Stronger mindset for earning than husband." },
+            { p: ["Ve", "Sa", "Ma"], res: "More intelligent than husband. Brings fortune. Frequent disputes. Professional." },
+            { p: ["Ve", "Sa", "Bu"], res: "In a profession/self-employed. Both earn well, no shortage of wealth." },
+            { p: ["Ve", "Sa", "Ju"], res: "Pious nature. Guide to the family, contributes greatly to welfare." },
+            { p: ["Ve", "Sa", "Ra"], res: "Suffers from polio or separation. Worshipping Saturn/Rahu improves life." },
+            { p: ["Ve", "Sa", "Ke"], res: "Delayed marriage, least happiness. Beautiful, earns well, nervous debility. Late life prosperity." },
+            { p: ["Ve", "Ra", "Sy"], res: "Danger to life in middle age. Short life for wife." },
+            { p: ["Ve", "Ra", "Ch"], res: "Difficult to succeed. Beautiful, but scoundrels cause her trouble." },
+            { p: ["Ve", "Ra", "Ma"], res: "Clever but bad-tempered. Hidden diseases trouble her." },
+            { p: ["Ve", "Ra", "Bu"], res: "Immoral connection for native. Wife is fortunate." },
+            { p: ["Ve", "Ra", "Ju"], res: "Pious and suffers hardships." },
+            { p: ["Ve", "Ra", "Sa"], res: "Lazy, lethargic, beautiful, self-employed. Greedy." },
+            { p: ["Ve", "Ra", "Ke"], res: "Danger to life during Rahu/Ketu transits." },
+            { p: ["Ve", "Ke", "Sy"], res: "Legal disputes between spouses. Wife accumulates money/ornaments, has divine wisdom." },
+            { p: ["Ve", "Ke", "Ch"], res: "Achieves objectives somehow. Fickle nature, suffers from cold." },
+            { p: ["Ve", "Ke", "Ma"], res: "Worshiper of Lord Shiva, full of grace. Native buys a house after marriage." },
+            { p: ["Ve", "Ke", "Bu"], res: "Good wife, but native cheats. She knows he likes many women." },
+            { p: ["Ve", "Ke", "Ju"], res: "Blessed by God, visits many pilgrimage centers." },
+            { p: ["Ve", "Ke", "Sa"], res: "Dull-witted, desire for asceticism." },
+            { p: ["Ve", "Ke", "Ra"], res: "Bad family life. Overcomes difficulties/blame. May divorce." },
+
+            // 2-Planet Combinations
+            { p: ["Ve", "Sy"], res: "Born in a family of respectable status. Likely to suffer from gallbladder disease." },
+            { p: ["Ve", "Ch"], res: "Frequent change of mind, likes cold drinks/travel. Suffers from cold, cough, breathing difficulty." },
+            { p: ["Ve", "Ma"], res: "Honest, doesn't disrespect. Fights with husband but ends smoothly. Proud, prone to heart disease." },
+            { p: ["Ve", "Bu"], res: "Sharp-minded, well-spoken, deals with difficulties. Intelligent, suffers skin disease." },
+            { p: ["Ve", "Ju"], res: "Great guide to husband, peaceful, pious, addicted to dairy. Lucky to get wealth and fame." },
+            { p: ["Ve", "Sa"], res: "Prospects of independent earning, self-assertive. Native prospers after marriage." },
+			{ p: ["Ve", "Ra"], res: "Lucky to get wealth, luxurious life. Secretive. Heat illnesses. Buys vehicles due to her fortune." },
+            { p: ["Ve", "Ke"], res: "Spiritually inclined, loses material interest after 40. Transit of Ketu over Venus causes separation/disputes." },
+			
+			// ================= NEW MARRIAGE & RELATIONSHIP COMBINATIONS =================
+            { p: ["Ve", "Ra"], res: "(Male) Obstacles in marriage; if married, then disputes. (Jupiter aspect brings compromise)" },
+            { p: ["Ve", "Ke"], res: "(Male) Obstacles in marriage; if married, then disputes. (Jupiter aspect brings compromise)" },
+            { p: ["Ve", "Sa", "Ra"], res: "(Male) Denial of marriage. (Jupiter aspect minimizes effects)" },
+            { p: ["Ve", "Sa", "Ke"], res: "(Male) Denial of marriage. (Jupiter aspect minimizes effects)" },
+            { p: ["Ma", "Ve", "Ra"], res: "Unhappy married life." },
+            { p: ["Ma", "Ve", "Ke"], res: "Dispute between husband and wife, separation or divorce. (Jupiter aspect brings compromise)" },
+            { p: ["Ve", "Ma", "Bu"], res: "Extramarital relationship (Male: with another lady. Female: with lover)." },
+            { p: ["Ch", "Ve"], res: "(Female) Pre-marital sexual relations. (If Jupiter aspects, mental adultery only)" },
+            { p: ["Bu", "Ve", "Ke"], res: "Illicit relationship of wife / Female affair is possible." },
+            { p: ["Ch", "Bu", "Ve"], res: "Loose character, tendency towards indiscriminate sexual encounters if opportunity arises." }
+			
+            
+        ];
+
+        /* =========================================================
+           VENUS ENGINE LOGIC
+        ========================================================= */
+        function runVenusPredictions() {
+            const containerCombo = document.getElementById("venusComboResults");
+            const containerSign = document.getElementById("venusSignResult");
+            const sel = document.getElementById("specificChartSelect");
+            
+            if (!containerCombo || !containerSign || !sel || !window._vargaChartStore) return;
+
+            const v = parseInt(sel.value);
+            const chart = window._vargaChartStore[v];
+            if (!chart) return;
+
+            const useAscMode = document.getElementById('dirModeToggle')?.checked;
+            const useKN = document.getElementById("modeKN")?.checked;
+            const ascIndex = window._ascSigns[v] ?? 0;
+            const pivot = typeof currentPivot !== 'undefined' ? currentPivot : 1;
+
+            let venusData = null;
+            let venusHouseStr = "";
+            const trines = { "EAST": [], "SOUTH": [], "WEST": [], "NORTH": [] };
+            const signNames = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
+
+            // 1. Locate Venus and build directional groups
+            for (let i = 0; i < 12; i++) {
+                chart[i].forEach(p => {
+                    if (!p.isAsc) {
+                        let actualSignNum = p.pureSign + 1; 
+                        let houseFromAsc = ((i - ascIndex + 12) % 12) + 1; 
+                        let displayedHouseNum = ((houseFromAsc - pivot + 12) % 12) + 1;
+                        let baseGroup = useAscMode ? displayedHouseNum : actualSignNum;
+                        let groupIdentifier = ((baseGroup - 1 + 12) % 12) + 1;
+
+                        let targetDir = "";
+                        if ([1, 5, 9].includes(groupIdentifier)) targetDir = "EAST";
+                        else if ([2, 6, 10].includes(groupIdentifier)) targetDir = "SOUTH";
+                        else if ([3, 7, 11].includes(groupIdentifier)) targetDir = "WEST";
+                        else if ([4, 8, 12].includes(groupIdentifier)) targetDir = "NORTH";
+
+                        if (targetDir) trines[targetDir].push(p.n);
+
+                        if (p.n === "Ve") {
+                            venusData = { signNum: actualSignNum, dir: targetDir };
+                        }
+                    }
+                });
+            }
+
+            if (!venusData) {
+                containerSign.innerHTML = "";
+                containerCombo.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted);">Venus not found in this chart.</div>`;
+                return;
+            }
+
+            // 2. Display Sign Prediction
+            let signPredHtml = `
+                <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid var(--card-border); padding: 15px; border-radius: 6px;">
+                    <div style="color: #f472b6; font-size: 14px; font-weight: bold; margin-bottom: 8px;">
+                        ♥ VENUS IN ${signNames[venusData.signNum - 1].toUpperCase()}
+                    </div>
+                    <div style="color: var(--text-main); font-size: 14.5px; line-height: 1.5;">
+                        ${venusSignRules[venusData.signNum] || "No specific rule available."}
+                    </div>
+                </div>
+            `;
+            containerSign.innerHTML = signPredHtml;
+
+            // 3. Display Combination Predictions (Planets in same Trine as Venus)
+            const venusTrinePlanets = trines[venusData.dir];
+            let matchCount = 0;
+            let comboHtml = "";
+
+            // Sort rules to match highest planet counts first
+            const sortedVenusRules = [...venusComboRules].sort((a, b) => b.p.length - a.p.length);
+
+            sortedVenusRules.forEach(rule => {
+                // Check if all planets required by rule are present in Venus's directional trine
+                const hasAllPlanets = rule.p.every(reqPlanet => venusTrinePlanets.includes(reqPlanet));
+                
+                if (hasAllPlanets) {
+                    matchCount++;
+                    const displayNames = rule.p.map(pCode => useKN ? (planetNameMapKN[pCode] || pCode) : pCode).join(" + ");
+                    
+                    comboHtml += `
+                    <div style="background: rgba(0,0,0,0.3); border-left: 4px solid #f472b6; padding: 12px; border-radius: 4px; margin-bottom: 8px;">
+                        <div style="color: var(--accent-secondary); font-size: 13px; font-weight: bold; margin-bottom: 4px; font-family: monospace;">
+                            COMBINATION: [${displayNames}]
+                        </div>
+                        <div style="color: var(--text-main); font-size: 14.5px; line-height: 1.4;">
+                            ► ${rule.res}
+                        </div>
+                    </div>`;
+                }
+            });
+
+            if (matchCount === 0) {
+                comboHtml = `<div style="text-align:center; padding: 20px; color: var(--text-muted);">No exact planet combinations found with Venus in its trine.</div>`;
+            }
+
+            containerCombo.innerHTML = comboHtml;
+        }
+
+        // Overriding your existing render wrapper to ensure Venus module runs on chart update
+        const _originalRenderChartForVenus = renderSpecificChart;
+        renderSpecificChart = function() {
+            // Run the previous pipeline (which includes the main BNN Predictions)
+            if (typeof _originalRenderChartForVenus === "function") {
+                _originalRenderChartForVenus();
+            }
+            
+            // Fire the new Venus prediction engine
+            if (typeof runVenusPredictions === "function") {
+                runVenusPredictions();
+            }
+        };
+
+        // Attach to the DirToggle to ensure it updates immediately if user flips ASC vs Zodiac modes
+        document.addEventListener("DOMContentLoaded", () => {
+            const dirToggle = document.getElementById('dirModeToggle');
+            if (dirToggle) {
+                dirToggle.addEventListener('change', () => {
+                    if (typeof runVenusPredictions === "function") runVenusPredictions();
+                });
+            }
+        });
+</script>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+	
+	
+	
+	
+<script>
+    // Universal function to toggle sections and flip the arrow
+    function toggleSection(contentId, titleElement) {
+        const content = document.getElementById(contentId);
+        if (!content) return;
+        
+        if (content.style.display === "none") {
+            content.style.display = "block";
+            titleElement.innerHTML = titleElement.innerHTML.replace('►', '▼');
+        } else {
+            content.style.display = "none";
+            titleElement.innerHTML = titleElement.innerHTML.replace('▼', '►');
+        }
+    }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
