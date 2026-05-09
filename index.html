@@ -668,7 +668,7 @@
 		
 		
 
-        function loadCloudProfile(event) {
+       function loadCloudProfile(event) {
             const file = event.target.files[0];
             if (!file) return;
 
@@ -680,6 +680,8 @@
                         alert("Invalid file. Please select a valid Cloud Horoscope Profile JSON.");
                         return;
                     }
+                    
+                    // 1. Restore UI Inputs
                     document.getElementById("onName").value = data.name || "";
                     if (data.date) {
                         document.getElementById("onDay").value = data.date.d || "";
@@ -697,10 +699,8 @@
                         document.getElementById("locationPreset").value = "manual"; 
                     }
                     
-                    // <--- ADDED: Load timezone from JSON and update the UI Badge
-                    // FIX: Support both "timezone" and "timezoneStr"
+                    // 2. Restore Timezone
 					const tzValue = data.timezone || data.timezoneStr;
-
 					if (tzValue) {
 						currentTimezoneStr = tzValue;
 						const tzBadge = document.getElementById("detectedTzBadge");
@@ -714,6 +714,29 @@
 						if(tzBadge) tzBadge.style.display = "none";
 					}
 
+                    // 3. THE FIX: INSTANT BOOT OR AUTO-FETCH
+                    if (data.chartData) {
+                        // If chart was already saved in the profile, instantly load it
+                        raw = data.chartData;
+                        
+                        updateHeader();
+                        const d = document.getElementById('dobField').value;
+                        const t = document.getElementById('tobField').value;
+                        if (d && t) {
+                            originalDateTime = new Date(d + "T" + t);
+                            currentDateTime  = new Date(originalDateTime);
+                        }
+                        
+                        calc();
+                        if(typeof initChartDropdown === 'function') initChartDropdown();
+                        if(typeof initDirDropdown === 'function') initDirDropdown();         
+                        if(typeof renderSpecificChart === 'function') renderSpecificChart();
+                        
+                    } else {
+                        // If it's just coordinates/time, automatically trigger the fetcher
+                        setTimeout(() => fetchFromCloud(), 200);
+                    }
+
                 } catch (error) {
                     alert("Error reading the profile file.");
                 }
@@ -721,7 +744,11 @@
             reader.readAsText(file);
             event.target.value = '';
         }
-
+		
+		
+		
+		
+		
         let wakeInterval = null;
 
         async function fetchFromCloud() {
@@ -943,8 +970,11 @@
             }
         }
 
-        // --- Core Data Load ---
-       document.getElementById('fIn').onchange = (e) => {
+        
+		
+		
+		// --- Core Data Load ---
+        document.getElementById('fIn').onchange = (e) => {
             const reader = new FileReader();
             reader.onload = (f) => {
                 try {
@@ -972,35 +1002,38 @@
 
                         // 3. Check for bundled chart data
                         if (loadedData.chartData) {
-							raw = loadedData.chartData;
-						} else {
-							// AUTO FETCH USING LOADED DATA
-							setTimeout(() => {
-								fetchFromCloud();
-							}, 300);
-						}
+                            raw = loadedData.chartData;
+                            bootUpEngine();
+                        } else {
+                            // IMMEDIATELY FETCH IF NO CHART DATA IS BUNDLED
+                            fetchFromCloud();
+                            return; // Stop execution here so it doesn't crash; fetchFromCloud will boot the engine upon success.
+                        }
 
                     } else if (loadedData.ayanamshas) {
                         // It's a raw Server JSON, accept it directly
                         raw = loadedData;
+                        bootUpEngine();
                     } else {
                         alert("Unrecognized JSON format. Engine cannot load this.");
                         return;
                     }
 
-                    // --- BOOT UP THE ENGINE ---
-                    updateHeader();
-                    const d = document.getElementById('dobField').value;
-                    const t = document.getElementById('tobField').value;
-                    if (d && t) {
-                        originalDateTime = new Date(d + "T" + t);
-                        currentDateTime  = new Date(originalDateTime);
+                    // --- BOOT UP LOGIC (Extracted for safety) ---
+                    function bootUpEngine() {
+                        updateHeader();
+                        const d = document.getElementById('dobField').value;
+                        const t = document.getElementById('tobField').value;
+                        if (d && t) {
+                            originalDateTime = new Date(d + "T" + t);
+                            currentDateTime  = new Date(originalDateTime);
+                        }
+                        
+                        calc();
+                        if(typeof initChartDropdown === 'function') initChartDropdown();
+                        if(typeof initDirDropdown === 'function') initDirDropdown();         
+                        if(typeof renderSpecificChart === 'function') renderSpecificChart();
                     }
-                    
-                    calc();
-                    initChartDropdown();
-                    if(typeof initDirDropdown === 'function') initDirDropdown();         
-                    renderSpecificChart();
                     
                 } catch (err) {
                     console.error("JSON Parse Error:", err);
@@ -2498,6 +2531,530 @@
         }
     }
 </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="island-card" id="progressionModule">
+        <div class="island-title" style="cursor: pointer; justify-content: flex-start; font-size: 1.4rem; border-bottom: none; margin-bottom: 5px; color: #a78bfa;" onclick="toggleSection('progressionContent', this)">
+            BNN PROGRESSIONS (MAJOR & MINOR) ▼
+        </div>
+        
+        <div id="progressionContent" style="display: block; width: 100%;">
+            <div style="text-align:center; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; gap: 15px; border-bottom: 1px solid var(--card-border); padding-bottom: 15px;">
+                <label style="color: var(--text-muted); font-weight: bold; font-size: 15px;">Target Date for Progression:</label>
+                <input type="date" id="progTargetDate" onchange="runBNNProgressions()" oninput="runBNNProgressions()" style="font-size: 16px;">
+                <button onclick="document.getElementById('progTargetDate').value = new Date().toISOString().split('T')[0]; runBNNProgressions();" style="background: var(--accent-primary); color: #000; border:none;">Set Today</button>
+            </div>
+
+            <div style="margin-bottom: 40px;">
+                <h3 style="color: var(--accent-secondary); text-align: center; text-transform: uppercase; letter-spacing: 2px;">Major Progression Kundali</h3>
+                <div id="majorProgKundaliContainer" style="display:flex; justify-content:center; width:100%; margin-bottom: 20px;"></div>
+                
+                <h3 style="color: var(--accent-secondary); text-align: center; text-transform: uppercase; letter-spacing: 2px;">Major Progressed Longitudes</h3>
+                <div id="majorProgLonTable" style="overflow-x: auto; margin-bottom: 20px;"></div>
+
+                <h3 style="color: var(--accent-secondary); text-align: center; text-transform: uppercase; letter-spacing: 2px;">Major Progression Tables</h3>
+                <div id="majorProgSignTable1" style="overflow-x: auto; margin-bottom: 15px;"></div>
+                <div id="majorProgSignTable2" style="overflow-x: auto;"></div>
+            </div>
+
+            <div style="margin-bottom: 20px; border-top: 1px dashed var(--card-border); padding-top: 30px;">
+                <h3 style="color: #f472b6; text-align: center; text-transform: uppercase; letter-spacing: 2px;">Minor Progression Kundali</h3>
+                <div id="minorProgKundaliContainer" style="display:flex; justify-content:center; width:100%; margin-bottom: 20px;"></div>
+                
+                <h3 style="color: #f472b6; text-align: center; text-transform: uppercase; letter-spacing: 2px;">Minor Progressed Longitudes</h3>
+                <div id="minorProgLonTable" style="overflow-x: auto; margin-bottom: 20px;"></div>
+
+                <h3 style="color: #f472b6; text-align: center; text-transform: uppercase; letter-spacing: 2px;">Minor Progression Tables</h3>
+                <div id="minorProgSignTable1" style="overflow-x: auto; margin-bottom: 15px;"></div>
+                <div id="minorProgSignTable2" style="overflow-x: auto;"></div>
+            </div>
+        </div>
+    </div>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	<script>
+    /* =========================================================
+       BNN PROGRESSION ENGINE (VIMSHOTTARI MOON + FRACTAL MATH)
+    ========================================================= */
+
+    const NAKSHATRAS = ["Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"];
+    const ZODIAC_SIGNS = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const pDate = document.getElementById("progTargetDate");
+        if(pDate) pDate.value = new Date().toISOString().split('T')[0];
+    });
+
+    function getNakshatraData(degree) {
+        let deg = ((degree % 360) + 360) % 360;
+        let nakSize = 360 / 27;
+        let padaSize = nakSize / 4;
+        let nakIndex = Math.floor(deg / nakSize);
+        let pada = Math.floor((deg % nakSize) / padaSize) + 1;
+        return { star: NAKSHATRAS[nakIndex], pada: pada };
+    }
+
+    // Converts absolute 360 to degrees/mins/secs WITHIN the 30-degree sign
+    function formatDegStr(deg) {
+        let signDeg = deg % 30;
+        let d = Math.floor(signDeg);
+        let m = Math.floor((signDeg - d) * 60);
+        let s = Math.floor((((signDeg - d) * 60) - m) * 60);
+        return `${String(d).padStart(2,'0')}° ${String(m).padStart(2,'0')}' ${String(s).padStart(2,'0')}"`;
+    }
+
+    // Used for Kundali rendering
+    function formatDegMin(deg) {
+        let signDeg = deg % 30;
+        let d = Math.floor(signDeg);
+        let m = Math.floor((signDeg - d) * 60);
+        return `${String(d).padStart(2,'0')}° ${String(m).padStart(2,'0')}'`;
+    }
+
+    function formatTableDate(ms) {
+        const d = new Date(ms);
+        const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        return `${String(d.getDate()).padStart(2,'0')}-${months[d.getMonth()]}-${d.getFullYear()}`;
+    }
+
+    function generateProgressionDateRanges(startDate, startLon, speedPerYear, isRetro, maxYears) {
+        const MS_PER_YEAR = 365.2425 * 24 * 60 * 60 * 1000;
+        let ranges = [];
+        let timeElapsedYears = 0;
+        let currentLon = startLon;
+        let dir = isRetro ? -1 : 1;
+        let currentSign = Math.floor(currentLon / 30);
+
+        let degRemaining = isRetro ? (currentLon % 30) : (30 - (currentLon % 30));
+        if (degRemaining <= 0.0001) degRemaining = 30; 
+        let timeInFirstSign = degRemaining / speedPerYear;
+
+        ranges.push({
+            sign: currentSign,
+            startMs: startDate.getTime(),
+            endMs: startDate.getTime() + (timeInFirstSign * MS_PER_YEAR)
+        });
+
+        timeElapsedYears += timeInFirstSign;
+
+        while (timeElapsedYears <= maxYears) {
+            currentSign = (currentSign + dir + 12) % 12;
+            let timeInSign = 30 / speedPerYear;
+            
+            let sMs = startDate.getTime() + (timeElapsedYears * MS_PER_YEAR);
+            let eMs = startDate.getTime() + ((timeElapsedYears + timeInSign) * MS_PER_YEAR);
+
+            ranges.push({ sign: currentSign, startMs: sMs, endMs: eMs });
+            timeElapsedYears += timeInSign;
+        }
+        return ranges;
+    }
+
+    function calculateVimshottariMoon(natalMoonDeg, ageInYears) {
+        let nakSize = 360 / 27;
+        let VIM_YEARS = [7, 20, 6, 10, 7, 18, 16, 19, 17]; // Ke, Ve, Su, Mo, Ma, Ra, Ju, Sa, Me
+        
+        let nakIndex = Math.floor(natalMoonDeg / nakSize);
+        let lordIndex = nakIndex % 9;
+        let degPassed = natalMoonDeg % nakSize;
+        let fractionLeft = (nakSize - degPassed) / nakSize;
+        let yearsLeftInFirstDasha = fractionLeft * VIM_YEARS[lordIndex];
+
+        let remainingAge = ageInYears;
+        let currentDeg = natalMoonDeg;
+        let currentLordIdx = lordIndex;
+
+        if (remainingAge <= yearsLeftInFirstDasha) {
+            let moved = (remainingAge / VIM_YEARS[currentLordIdx]) * nakSize;
+            return (currentDeg + moved) % 360;
+        } else {
+            remainingAge -= yearsLeftInFirstDasha;
+            currentDeg += (nakSize - degPassed); // Push to next boundary
+            currentLordIdx = (currentLordIdx + 1) % 9;
+
+            while (remainingAge > VIM_YEARS[currentLordIdx]) {
+                remainingAge -= VIM_YEARS[currentLordIdx];
+                currentDeg += nakSize;
+                currentLordIdx = (currentLordIdx + 1) % 9;
+            }
+            
+            currentDeg += (remainingAge / VIM_YEARS[currentLordIdx]) * nakSize;
+            return currentDeg % 360;
+        }
+    }
+
+    function generateVimshottariMoonRanges(birthDateMs, natalMoonDeg, maxYears) {
+        const MS_PER_YEAR = 365.2425 * 24 * 60 * 60 * 1000;
+        let ranges = [];
+        let nakSize = 360 / 27;
+        let VIM_YEARS = [7, 20, 6, 10, 7, 18, 16, 19, 17];
+        
+        let currentDeg = natalMoonDeg;
+        let currentAgeYears = 0;
+
+        let nakIndex = Math.floor(currentDeg / nakSize);
+        let lordIndex = nakIndex % 9;
+        let degPassed = currentDeg % nakSize;
+        let yearsLeftInDasha = ((nakSize - degPassed) / nakSize) * VIM_YEARS[lordIndex];
+
+        let currentSign = Math.floor(currentDeg / 30);
+        let signStartMs = birthDateMs;
+
+        while(currentAgeYears < maxYears) {
+            let nextSignBoundary = (currentSign + 1) * 30;
+            let distToBoundary = nextSignBoundary - currentDeg;
+            if(distToBoundary === 0) distToBoundary = 30; 
+            
+            let speed = nakSize / VIM_YEARS[lordIndex]; 
+            let yearsToBoundary = distToBoundary / speed;
+
+            if (yearsToBoundary <= yearsLeftInDasha) {
+                currentAgeYears += yearsToBoundary;
+                let signEndMs = birthDateMs + (currentAgeYears * MS_PER_YEAR);
+                
+                ranges.push({ sign: currentSign % 12, startMs: signStartMs, endMs: signEndMs });
+
+                currentDeg = nextSignBoundary % 360;
+                currentSign = Math.floor(currentDeg / 30);
+                signStartMs = signEndMs;
+                yearsLeftInDasha -= yearsToBoundary;
+                
+                if(Math.abs(yearsLeftInDasha) < 0.0001) {
+                    lordIndex = (lordIndex + 1) % 9;
+                    yearsLeftInDasha = VIM_YEARS[lordIndex];
+                }
+            } else {
+                currentAgeYears += yearsLeftInDasha;
+                currentDeg += yearsLeftInDasha * speed;
+                lordIndex = (lordIndex + 1) % 9;
+                yearsLeftInDasha = VIM_YEARS[lordIndex];
+            }
+        }
+        return ranges;
+    }
+
+    function renderProgKundali(containerId, title, progressedPlanetsObj, natalData) {
+        const container = document.getElementById(containerId);
+        if(!container) return;
+        
+        container.innerHTML = "";
+        const card = document.createElement('div'); 
+        card.className = 'varga-card';
+        card.style.background = "#0f172a";
+        
+        const k = document.createElement('div'); 
+        k.className = 'kundali';
+        const m = [11, 0, 1, 2, 10, -1, -1, 3, 9, -1, -1, 4, 8, 7, 6, 5];
+
+        // --- NEW: Calculate Original ASC Sign (0 to 11) ---
+        let ascSign = Math.floor(natalData.lagna / 30);
+
+        m.forEach(idx => {
+            const h = document.createElement('div'); 
+            h.className = 'house';
+
+            if (idx === -1) {
+                if (!card.querySelector('.center-box')) {
+                    const cb = document.createElement('div'); 
+                    cb.className = 'center-box'; 
+                    cb.style.fontSize = "1.2rem";
+                    cb.style.textAlign = "center";
+                    cb.innerHTML = title.replace(" ", "<br>");
+                    k.appendChild(cb);
+                }
+            } else {
+                // --- NEW: Dynamic House Numbering based on ASC ---
+                let houseNum = ((idx - ascSign + 12) % 12) + 1;
+                
+                // Highlight the ASC house background slightly
+                if (idx === ascSign) {
+                    h.classList.add("asc-house");
+                }
+
+                h.innerHTML += `<div class="house-num">${houseNum}</div>`;
+
+                let housePlanets = [];
+
+                // 1. Gather Natal Planets
+                const fullNames = ["Surya", "Chandra", "Mangala", "Budha", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"];
+                fullNames.forEach(pName => {
+                    let nDeg = natalData.planets[pName];
+                    if (nDeg !== undefined) {
+                        let nSign = Math.floor(nDeg / 30);
+                        if (nSign === idx) {
+                            housePlanets.push({
+                                type: "natal",
+                                name: pName,
+                                deg: nDeg % 30,
+                                rawDeg: nDeg
+                            });
+                        }
+                    }
+                });
+
+                // --- NEW: Add ASC visually into the chart so you can see the 1st House Anchor ---
+                if (idx === ascSign) {
+                    housePlanets.push({
+                        type: "asc",
+                        name: "ASC",
+                        deg: natalData.lagna % 30,
+                        rawDeg: natalData.lagna
+                    });
+                }
+
+                // 2. Gather Progressed Planets
+                for (const [pName, pData] of Object.entries(progressedPlanetsObj)) {
+                    let pSign = Math.floor(pData.deg / 30);
+                    if (pSign === idx) {
+                        housePlanets.push({
+                            type: "prog",
+                            name: pName,
+                            deg: pData.deg % 30,
+                            rawDeg: pData.deg
+                        });
+                    }
+                }
+
+                // 3. Sort Logic: Aries to Virgo (idx 0 to 5) = Top to Bottom, Libra to Pisces (idx 6 to 11) = Bottom to Top
+                if (idx <= 5) {
+                    housePlanets.sort((a, b) => a.deg - b.deg); // Ascending
+                } else {
+                    housePlanets.sort((a, b) => b.deg - a.deg); // Descending
+                }
+
+                // 4. Render the sorted planets
+                housePlanets.forEach(p => {
+                    if (p.type === "asc") {
+                        h.innerHTML += `<div style="font-size: 13px; color: var(--accent-secondary); font-weight: 800; text-align: center; margin: 2px 0;">${p.name} ${formatDegMin(p.rawDeg)}</div>`;
+                    } else if (p.type === "natal") {
+                        h.innerHTML += `<div style="font-size: 13px; color: var(--text-muted); font-weight: 600; text-align: center; margin: 2px 0;">${p.name} ${formatDegMin(p.rawDeg)}</div>`;
+                    } else {
+                        let highlightColor = title.includes("Major") ? "var(--accent-secondary)" : "#f472b6";
+                        h.innerHTML += `<div style="font-size: 13px; color: ${highlightColor}; font-weight: 900; text-align: center; margin: 3px 0; background: rgba(0,0,0,0.4); padding: 2px; border-radius: 4px;">Prg - ${p.name} ${formatDegMin(p.rawDeg)}</div>`;
+                    }
+                });
+
+                k.appendChild(h);
+            }
+        });
+        card.appendChild(k);
+        container.appendChild(card);
+    }
+
+
+
+
+
+
+
+
+
+    // UPDATED: Starting date highlighted in yellow text, fully center aligned
+    function buildDateTable(containerId, rangesMap, targetDateMs, planetsList) {
+        const container = document.getElementById(containerId);
+        if(!container) return;
+
+        let tableHtml = `<table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: center;">
+            <thead>
+                <tr style="background: var(--card-border); color: var(--text-main);">
+                    <th style="padding: 10px; border: 1px solid #475569; text-align: center;">Sign</th>`;
+        
+        planetsList.forEach(p => {
+            tableHtml += `<th style="padding: 10px; border: 1px solid #475569; text-align: center;">Prog ${p}</th>`;
+        });
+        
+        tableHtml += `</tr></thead><tbody>`;
+
+        ZODIAC_SIGNS.forEach((signName, signIdx) => {
+            tableHtml += `<tr>`;
+            tableHtml += `<td style="padding: 8px; border: 1px solid #475569; font-weight: bold; background: rgba(0,0,0,0.3); text-align: center;">${signName}</td>`;
+            
+            planetsList.forEach(p => {
+                let allRanges = rangesMap[p] || [];
+                let cellData = allRanges.filter(r => r.sign === signIdx);
+                let cellContent = "";
+                
+                cellData.forEach(span => {
+                    let sDate = formatTableDate(span.startMs);
+                    let eDate = formatTableDate(span.endMs);
+                    let isActive = (targetDateMs >= span.startMs && targetDateMs <= span.endMs);
+                    
+                    // Check if this specific span is the very first entry (Starting date)
+                    let isStart = (allRanges.length > 0 && span === allRanges[0]);
+                    
+                    let bg = isActive ? "background: #be185d; color: white; padding: 4px; border-radius: 4px; font-weight: bold;" : "padding: 2px;";
+                    
+                    // Apply yellow text strictly to the text if it's the starting cycle
+                    let dateString = isStart ? `<span style="color: #fde047; font-weight: bold;">${sDate} to ${eDate}</span>` : `${sDate} to ${eDate}`;
+
+                    cellContent += `<div style="${bg} margin-bottom: 4px; white-space: nowrap;">${dateString}</div>`;
+                });
+
+                tableHtml += `<td style="padding: 8px; border: 1px solid #475569; vertical-align: top; text-align: center;">${cellContent || "-"}</td>`;
+            });
+            tableHtml += `</tr>`;
+        });
+
+        tableHtml += `</tbody></table>`;
+        container.innerHTML = tableHtml;
+    }
+
+    // UPDATED: Fully Center Aligned Table Output
+    function buildLonTable(containerId, progPlanets, titlePrefix) {
+        const container = document.getElementById(containerId);
+        if(!container) return;
+
+        let tableHtml = `<table style="width: 100%; max-width: 600px; margin: 0 auto; border-collapse: collapse; font-size: 14px; text-align: center;">
+            <thead>
+                <tr style="background: var(--card-border); color: var(--text-main);">
+                    <th style="padding: 10px; border: 1px solid #475569; text-align: center;">${titlePrefix} Progression</th>
+                    <th style="padding: 10px; border: 1px solid #475569; text-align: center;">Progressed Longitude</th>
+                    <th style="padding: 10px; border: 1px solid #475569; text-align: center;">Star (Pada)</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        for (const [p, data] of Object.entries(progPlanets)) {
+            let deg = data.deg;
+            let nData = getNakshatraData(deg);
+            
+            tableHtml += `<tr>
+                <td style="padding: 8px; border: 1px solid #475569; font-weight: bold; background: rgba(0,0,0,0.3); text-align: center;">Prg - ${p}</td>
+                <td style="padding: 8px; border: 1px solid #475569; font-family: monospace; color: var(--accent-primary); text-align: center;">${formatDegStr(deg)}</td>
+                <td style="padding: 8px; border: 1px solid #475569; text-align: center;">${nData.star} (${nData.pada})</td>
+            </tr>`;
+        }
+        tableHtml += `</tbody></table>`;
+        container.innerHTML = tableHtml;
+    }
+
+    function runBNNProgressions() {
+        if (!raw || !originalDateTime) return;
+        
+        const targetInput = document.getElementById("progTargetDate").value;
+        if (!targetInput) return;
+        
+        const [y, m, d] = targetInput.split('-');
+        const targetDate = new Date(y, m - 1, d, 12, 0, 0); 
+        const targetDateMs = targetDate.getTime();
+        
+        const MS_PER_YEAR = 365.2425 * 24 * 60 * 60 * 1000;
+        let ageInYears = (targetDateMs - originalDateTime.getTime()) / MS_PER_YEAR;
+        if (ageInYears < 0) ageInYears = 0;
+
+        const pData = raw.ayanamshas["Lahiri"];
+        
+        const bnnMajorPlanets = ["Jupiter", "Saturn", "Rahu", "Ketu"];
+        const bnnMinorPlanets = ["Jupiter", "Chandra", "Saturn", "Rahu", "Ketu"]; 
+        
+        const speeds = {
+            Major: { Jupiter: 2.5, Saturn: 1, Rahu: 1.666667, Ketu: 1.666667 }
+        };
+
+        let majorProgPlanets = {};
+        let minorProgPlanets = {};
+        let majorRanges = { Chandra: [], Jupiter: [], Saturn: [], Rahu: [], Ketu: [] };
+        let minorRanges = { Jupiter: [], Chandra: [], Saturn: [], Rahu: [], Ketu: [] };
+
+        let nMoonLon = pData.planets["Chandra"];
+        majorProgPlanets["Chandra"] = { deg: calculateVimshottariMoon(nMoonLon, ageInYears) };
+        majorRanges["Chandra"] = generateVimshottariMoonRanges(originalDateTime.getTime(), nMoonLon, 120);
+
+        bnnMajorPlanets.forEach(p => {
+            let nLon = pData.planets[p];
+            let isRetro = (p === "Rahu" || p === "Ketu") ? true : (pData.planets_retro[p] || false);
+            let dir = isRetro ? -1 : 1;
+
+            let majorProgDeg = (nLon + (dir * ageInYears * speeds.Major[p])) % 360;
+            if (majorProgDeg < 0) majorProgDeg += 360;
+            majorProgPlanets[p] = { deg: majorProgDeg };
+
+            majorRanges[p] = generateProgressionDateRanges(originalDateTime, nLon, speeds.Major[p], isRetro, 120);
+        });
+
+        bnnMinorPlanets.forEach(p => {
+            let isRetro = (p === "Rahu" || p === "Ketu") ? true : (pData.planets_retro[p] || false);
+            let dir = isRetro ? -1 : 1;
+
+            let currentMajorRange = majorRanges[p].find(r => targetDateMs >= r.startMs && targetDateMs <= r.endMs);
+            if (currentMajorRange) {
+                let timeInMajorMs = targetDateMs - currentMajorRange.startMs;
+                let durationMs = currentMajorRange.endMs - currentMajorRange.startMs;
+                
+                let minorDegTravelled = (timeInMajorMs / durationMs) * 360;
+                
+                let minorStartDeg = isRetro ? (currentMajorRange.sign * 30) + 29.99999 : currentMajorRange.sign * 30;
+                let minorProgDeg = minorStartDeg + (dir * minorDegTravelled);
+                minorProgDeg = ((minorProgDeg % 360) + 360) % 360;
+                minorProgPlanets[p] = { deg: minorProgDeg };
+
+                let durationYears = durationMs / MS_PER_YEAR;
+                let minorSpeedEquivalent = 360 / durationYears;
+                minorRanges[p] = generateProgressionDateRanges(new Date(currentMajorRange.startMs), minorStartDeg, minorSpeedEquivalent, isRetro, durationYears);
+            }
+        });
+
+        renderProgKundali("majorProgKundaliContainer", "Major Progression", majorProgPlanets, pData);
+        renderProgKundali("minorProgKundaliContainer", "Minor Progression", minorProgPlanets, pData);
+
+        buildLonTable("majorProgLonTable", majorProgPlanets, "Major");
+        buildLonTable("minorProgLonTable", minorProgPlanets, "Minor");
+
+        buildDateTable("majorProgSignTable1", majorRanges, targetDateMs, ["Jupiter", "Chandra", "Saturn"]);
+        buildDateTable("majorProgSignTable2", majorRanges, targetDateMs, ["Rahu", "Ketu"]);
+
+        buildDateTable("minorProgSignTable1", minorRanges, targetDateMs, ["Jupiter", "Chandra", "Saturn"]);
+        buildDateTable("minorProgSignTable2", minorRanges, targetDateMs, ["Rahu", "Ketu"]);
+    }
+
+    const _originalBNNCalc = calc;
+    calc = function() {
+        if (typeof _originalBNNCalc === "function") _originalBNNCalc();
+        if (typeof runBNNProgressions === "function") runBNNProgressions();
+    };
+
+</script>
+
+
+
+
+
+
+
+
+
 
 
 
