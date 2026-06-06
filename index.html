@@ -3137,8 +3137,17 @@
         tableHtml += `</tr></thead><tbody>`;
 
         ZODIAC_SIGNS.forEach((signName, signIdx) => {
+            // --- NEW: Calculate House from ASC ---
+            let ascSignIdx = 0;
+            if (typeof raw !== 'undefined' && raw && raw.ayanamshas && raw.ayanamshas["Lahiri"] && raw.ayanamshas["Lahiri"].lagna !== undefined) {
+                ascSignIdx = Math.floor(raw.ayanamshas["Lahiri"].lagna / 30);
+            }
+            let houseNum = ((signIdx - ascSignIdx + 12) % 12) + 1;
+            let signLabel = `${signName} - ${houseNum}`;
+            // -------------------------------------
+
             tableHtml += `<tr>`;
-            tableHtml += `<td style="padding: 8px; border: 1px solid #475569; font-weight: bold; background: rgba(0,0,0,0.3); text-align: center;">${signName}</td>`;
+            tableHtml += `<td style="padding: 8px; border: 1px solid #475569; font-weight: bold; background: rgba(0,0,0,0.3); text-align: center; white-space: nowrap;">${signLabel}</td>`;
             
             planetsList.forEach(p => {
                 if (!p) {
