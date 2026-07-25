@@ -225,33 +225,96 @@
         
         <div class="fetch-row">
             <div class="form-group">
-                <span>&#x1F4C5; Date (DD-MM-YYYY)</span>
-                <div style="display:flex; gap:6px; align-items:center;">
-                    <input type="text" id="onDay" placeholder="DD" maxlength="2" style="width:45px; text-align:center;" onkeydown="arrowSpinner(event, 1, 31, 2)" oninput="smartJump(this, 'onMonth', 'day')"> -
-                    <input type="text" id="onMonth" placeholder="MM" maxlength="2" style="width:45px; text-align:center;" onkeydown="arrowSpinner(event, 1, 12, 2)" oninput="smartJump(this, 'onYear', 'month')"> -
-                    <input type="text" id="onYear" placeholder="YYYY" maxlength="4" style="width:65px; text-align:center;" onkeydown="arrowSpinner(event, 1900, 2100, 4)" oninput="smartJump(this, 'onHour', 'year')">
+                <span style="font-size: 14px;">&#x1F4C5; Date (DD-MM-YYYY)</span>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="text" id="onDay" placeholder="DD" maxlength="2" style="width:50px; text-align:center; font-size: 14px;" onkeydown="arrowSpinner(event, 1, 31, 2)" oninput="smartJump(this, 'onMonth', 'day')"> -
+                    <input type="text" id="onMonth" placeholder="MM" maxlength="2" style="width:50px; text-align:center; font-size: 14px;" onkeydown="arrowSpinner(event, 1, 12, 2)" oninput="smartJump(this, 'onYear', 'month')"> -
+                    <input type="text" id="onYear" placeholder="YYYY" maxlength="4" style="width:75px; text-align:center; font-size: 14px;" onkeydown="arrowSpinner(event, 1900, 2100, 4)" oninput="smartJump(this, 'onHour', 'year')">
                 </div>
             </div>
 
             <div class="form-group">
-                <span>&#x23F1; Time (HH:MM:SS)</span>
-                <div style="display:flex; gap:6px; align-items:center;">
-                    <input type="text" id="onHour" placeholder="HH" maxlength="2" style="width:45px; text-align:center;" onkeydown="arrowSpinner(event, 0, 23, 2)" oninput="smartJump(this, 'onMin', 'hour')"> :
-                    <input type="text" id="onMin" placeholder="MM" maxlength="2" style="width:45px; text-align:center;" onkeydown="arrowSpinner(event, 0, 59, 2)" oninput="smartJump(this, 'mapSearchQuery', 'minute')"> :
-                    <input type="text" id="onSec" value="00" maxlength="2" style="width:45px; text-align:center;" onkeydown="arrowSpinner(event, 0, 59, 2)">
+                <span style="font-size: 14px;">&#x23F1; Time (HH:MM:SS)</span>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="text" id="onHour" placeholder="HH" maxlength="2" style="width:50px; text-align:center; font-size: 14px;" onkeydown="arrowSpinner(event, 0, 23, 2)" oninput="smartJump(this, 'onMin', 'hour')"> :
+                    <input type="text" id="onMin" placeholder="MM" maxlength="2" style="width:50px; text-align:center; font-size: 14px;" onkeydown="arrowSpinner(event, 0, 59, 2)" oninput="smartJump(this, 'mapSearchQuery', 'minute')"> :
+                    <input type="text" id="onSec" value="00" maxlength="2" style="width:50px; text-align:center; font-size: 14px;" onkeydown="arrowSpinner(event, 0, 59, 2)">
                 </div>
             </div>
             
-            <div class="form-group">
-                <span>&#x1F4CD; Standard Places</span>
-                <select id="locationPreset" onchange="applyPresetLocation()" style="width: 160px;">
-                    <option value="manual">Manual GPS (Default)</option>
-                    <option value="13.3190737,77.1326306">Tumakuru</option>
-                    <option value="12.918880,77.634986">Bengaluru</option>
-                </select>
+            <div style="display: flex; gap: 25px; align-items: flex-end; flex: 1; flex-wrap: wrap;">
+                <div class="form-group">
+                    <span style="font-size: 14px;">&#x1F4CD; Standard Places</span>
+                    <select id="locationPreset" onchange="applyPresetLocation()" style="width: 180px; font-size: 14px;">
+                        <option value="manual">Manual GPS (Default)</option>
+                        <option value="13.3190737,77.1326306">Tumakuru</option>
+                        <option value="12.918880,77.634986">Bengaluru</option>
+                        <option value="13.315527,76.942059">Gubbi</option>
+                        <option value="12.304776,76.655108">Mysore</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" style="padding-bottom: 1px;">
+                    <div id="ageOutlineBox" style="border: 1px solid var(--card-border); padding: 5px 15px; border-radius: 6px; background: rgba(12, 5, 5, 0.9); color: var(--accent-primary); font-size: 15px; font-weight: 800; white-space: nowrap; height: 34px; display: flex; align-items: center; letter-spacing: 0.5px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.6); text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
+                        Age : &nbsp;-- years&nbsp; : -- months : -- days
+                    </div>
+                </div>
             </div>
+        </div>
 
-            </div>
+        <script>
+            function calculateAgeLive() {
+                const dInput = document.getElementById("onDay");
+                const mInput = document.getElementById("onMonth");
+                const yInput = document.getElementById("onYear");
+                const display = document.getElementById("ageOutlineBox");
+                
+                if (!dInput || !mInput || !yInput || !display) return;
+
+                const d = parseInt(dInput.value, 10);
+                const m = parseInt(mInput.value, 10);
+                const y = parseInt(yInput.value, 10);
+                
+                if (isNaN(d) || isNaN(m) || isNaN(y) || y < 1000) {
+                    display.innerHTML = "Age : &nbsp;-- years&nbsp; : -- months : -- days";
+                    return;
+                }
+
+                const dob = new Date(y, m - 1, d);
+                const today = new Date(); 
+                
+                if (dob > today) {
+                    display.innerHTML = "Age : &nbsp;Future Date";
+                    return;
+                }
+
+                let years = today.getFullYear() - dob.getFullYear();
+                let months = today.getMonth() - dob.getMonth();
+                let days = today.getDate() - dob.getDate();
+
+                if (days < 0) {
+                    months--;
+                    const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                    days += prevMonth.getDate();
+                }
+                if (months < 0) {
+                    years--;
+                    months += 12;
+                }
+                
+                display.innerHTML = `Age : &nbsp;${years} years&nbsp; : ${months} months : ${days} days`;
+            }
+
+            document.addEventListener("DOMContentLoaded", () => {
+                const box = document.getElementById("onlineFetchBox");
+                if (box) {
+                    box.addEventListener("input", calculateAgeLive);
+                    box.addEventListener("keyup", calculateAgeLive);
+                    box.addEventListener("change", calculateAgeLive);
+                }
+                setInterval(calculateAgeLive, 400);
+            });
+        </script>
 
             <div class="fetch-row" style="border-top: 1px solid var(--card-border); padding-top: 15px; gap: 15px;">
                 <div class="form-group">
@@ -707,20 +770,113 @@
 		
 
         function arrowSpinner(e, min, max, padding) {
-            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                e.preventDefault(); 
-                let val = parseInt(e.target.value);
-                if (isNaN(val)) {
-                    if (max > 2000) val = new Date().getFullYear(); 
-                    else val = min;
-                }
-                if (e.key === "ArrowUp") val++;
-                if (e.key === "ArrowDown") val--;
-                if (val > max) val = min;
-                if (val < min) val = max;
-                e.target.value = String(val).padStart(padding, '0');
-            }
-        }
+		if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+			e.preventDefault();
+			let val = parseInt(e.target.value);
+			if (isNaN(val)) {
+				if (max > 2000) val = new Date().getFullYear();
+				else val = min;
+			}
+
+			let increment = (e.key === "ArrowUp") ? 1 : -1;
+			let id = e.target.id.toLowerCase();
+			let container = e.target.parentElement;
+
+			const triggerUpdate = (el) => {
+				if (el) el.dispatchEvent(new Event('input', { bubbles: true }));
+			};
+
+			let isMonth = id.includes("month");
+			let isDay = id.includes("day");
+
+			// Universal Month Rollover (Affects Years)
+			if (isMonth) {
+				val += increment;
+				let yearEl = Array.from(container.querySelectorAll('input')).find(el => el.id.toLowerCase().includes('year')); 
+				
+				if (val > 12) {
+					val = 1;
+					if (yearEl) {
+						yearEl.value = String((parseInt(yearEl.value) || new Date().getFullYear()) + 1).padStart(4, '0');
+						triggerUpdate(yearEl);
+					}
+				} else if (val < 1) {
+					val = 12;
+					if (yearEl) {
+						yearEl.value = String((parseInt(yearEl.value) || new Date().getFullYear()) - 1).padStart(4, '0');
+						triggerUpdate(yearEl);
+					}
+				}
+				e.target.value = String(val).padStart(padding, '0');
+				triggerUpdate(e.target);
+				return;
+			}
+
+			// Universal Day Rollover (Affects Months & Years accurately using leap-year logic)
+			if (isDay) {
+				val += increment;
+				let monthEl = Array.from(container.querySelectorAll('input')).find(el => el.id.toLowerCase().includes('month'));
+				let yearEl = Array.from(container.querySelectorAll('input')).find(el => el.id.toLowerCase().includes('year'));
+				
+				let mVal = monthEl ? (parseInt(monthEl.value) || 1) : 1;
+				let yVal = yearEl ? (parseInt(yearEl.value) || new Date().getFullYear()) : new Date().getFullYear();
+
+				let daysInMonth = new Date(yVal, mVal, 0).getDate();
+
+				if (val > daysInMonth) {
+					val = 1;
+					if (monthEl) {
+						mVal += 1;
+						if (mVal > 12) {
+							mVal = 1;
+							if (yearEl) {
+								yearEl.value = String(yVal + 1).padStart(4, '0');
+								triggerUpdate(yearEl);
+							}
+						}
+						monthEl.value = String(mVal).padStart(2, '0');
+						triggerUpdate(monthEl);
+					}
+				} else if (val < 1) {
+					if (monthEl) {
+						mVal -= 1;
+						if (mVal < 1) {
+							mVal = 12;
+							if (yearEl) {
+								yVal -= 1;
+								yearEl.value = String(yVal).padStart(4, '0');
+								triggerUpdate(yearEl);
+							}
+						}
+						monthEl.value = String(mVal).padStart(2, '0');
+						triggerUpdate(monthEl);
+						daysInMonth = new Date(yVal, mVal, 0).getDate(); 
+					}
+					val = daysInMonth;
+				}
+				e.target.value = String(val).padStart(padding, '0');
+				triggerUpdate(e.target);
+				return;
+			}
+
+			// Default bound behavior for non-date inputs (Hours, Mins, Secs)
+			val += increment;
+			if (val > max) val = min;
+			if (val < min) val = max;
+			e.target.value = String(val).padStart(padding, '0');
+			triggerUpdate(e.target);
+		}
+	}
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
 
         function smartJump(currentElement, nextElementId, type) {
             let val = currentElement.value;
@@ -765,6 +921,18 @@
         function saveCloudProfile() {
             const name = document.getElementById("onName").value.trim();
             if (name.length < 4) { alert("Please enter a profile name first."); return; }
+            
+            // 1. Ensure chart data exists before saving
+            if (!raw) {
+                alert("No chart data loaded. Please fetch or load data before saving.");
+                return;
+            }
+
+            // 2. Clean the Ayanamshas dictionary (Remove Sayana, KP Old to save space)
+            if (raw.ayanamshas) {
+                if (raw.ayanamshas["Sayana"]) delete raw.ayanamshas["Sayana"];
+                if (raw.ayanamshas["KP Old"]) delete raw.ayanamshas["KP Old"];
+            }
 
             const profileData = {
                 type: "CloudHoroscopeProfile",
@@ -773,7 +941,8 @@
                 time: { h: document.getElementById("onHour").value, min: document.getElementById("onMin").value, sec: document.getElementById("onSec").value },
                 coords: { lat: document.getElementById("onlineLat").value, lon: document.getElementById("onlineLon").value },
                 timezone: currentTimezoneStr,
-                chartData: raw // <--- NEW: Bundles the fully calculated chart into the save file!
+                // 3. Embed the entire cleaned object directly for 100% offline loading
+                chartData: raw 
             };
 
             const dataStr = JSON.stringify(profileData, null, 2);
@@ -809,7 +978,7 @@
                     }
                     
                     // 1. Restore UI Inputs
-                    document.getElementById("onName").value = data.name || "";
+                    document.getElementById("onName").value = (data.name || "").toUpperCase();
                     if (data.date) {
                         document.getElementById("onDay").value = data.date.d || "";
                         document.getElementById("onMonth").value = data.date.m || "";
@@ -842,9 +1011,9 @@
 						if(tzBadge) tzBadge.style.display = "none";
 					}
 
-                    // 3. THE FIX: INSTANT BOOT OR AUTO-FETCH
+                    // 3. OFFLINE LOADING ENGINE
                     if (data.chartData) {
-                        // If chart was already saved in the profile, instantly load it
+                        // Offline Mode: Chart data exists, bypass the cloud entirely
                         raw = data.chartData;
                         
                         updateHeader();
@@ -855,13 +1024,14 @@
                             currentDateTime  = new Date(originalDateTime);
                         }
                         
-                        calc();
+                        calc(); // Instantly calculate without fetching
                         if(typeof initChartDropdown === 'function') initChartDropdown();
                         if(typeof initDirDropdown === 'function') initDirDropdown();         
                         if(typeof renderSpecificChart === 'function') renderSpecificChart();
                         
                     } else {
-                        // If it's just coordinates/time, automatically trigger the fetcher
+                        // Legacy Mode: No embedded chartData, fallback to cloud fetch
+                        alert("Legacy profile detected. Fetching missing data from cloud...");
                         setTimeout(() => fetchFromCloud(), 200);
                     }
 
@@ -1128,14 +1298,15 @@
                             if(tzBadge) { tzBadge.innerText = currentTimezoneStr; tzBadge.style.display = "inline-block"; }
                         }
 
-                        // 3. Check for bundled chart data
+                        // 3. OFFLINE LOADING
                         if (loadedData.chartData) {
                             raw = loadedData.chartData;
                             bootUpEngine();
                         } else {
-                            // IMMEDIATELY FETCH IF NO CHART DATA IS BUNDLED
+                            // FALLBACK TO FETCH ONLY IF NO CHART DATA IS BUNDLED
+                            alert("Legacy JSON detected. Fetching data online...");
                             fetchFromCloud();
-                            return; // Stop execution here so it doesn't crash; fetchFromCloud will boot the engine upon success.
+                            return; 
                         }
 
                     } else if (loadedData.ayanamshas) {
@@ -1147,7 +1318,7 @@
                         return;
                     }
 
-                    // --- BOOT UP LOGIC (Extracted for safety) ---
+                    // --- BOOT UP LOGIC ---
                     function bootUpEngine() {
                         updateHeader();
                         const d = document.getElementById('dobField').value;
@@ -1157,7 +1328,7 @@
                             currentDateTime  = new Date(originalDateTime);
                         }
                         
-                        calc();
+                        calc(); // Bypass fetch entirely
                         if(typeof initChartDropdown === 'function') initChartDropdown();
                         if(typeof initDirDropdown === 'function') initDirDropdown();         
                         if(typeof renderSpecificChart === 'function') renderSpecificChart();
@@ -1181,17 +1352,27 @@
 		
 
         function updateHeader() {
-            if(!raw) return;
-            document.getElementById('personName').innerText = raw.meta?.name || "Unknown";
+            if (!raw) return;
             
+            // 1. Prioritize UI Profile Name, then raw.meta.name, then fallback
+            const uiName = document.getElementById('onName')?.value.trim();
+            const personName = uiName || raw.meta?.name || "Unknown";
+            
+            document.getElementById('personName').innerText = personName;
+            
+            // 2. Ensure raw.meta exists and stays synced
+            if (!raw.meta) raw.meta = {};
+            raw.meta.name = personName;
+            
+            // 3. Sync DOB and TOB fields
             if (raw.meta?.datetime_utc) {
                 const utcDate = new Date(raw.meta.datetime_utc);
                 const y = utcDate.getFullYear();
-                const m = String(utcDate.getMonth()+1).padStart(2,'0');
-                const d = String(utcDate.getDate()).padStart(2,'0');
-                const hh = String(utcDate.getHours()).padStart(2,'0');
-                const mm = String(utcDate.getMinutes()).padStart(2,'0');
-                const ss = String(utcDate.getSeconds()).padStart(2,'0');
+                const m = String(utcDate.getMonth() + 1).padStart(2, '0');
+                const d = String(utcDate.getDate()).padStart(2, '0');
+                const hh = String(utcDate.getHours()).padStart(2, '0');
+                const mm = String(utcDate.getMinutes()).padStart(2, '0');
+                const ss = String(utcDate.getSeconds()).padStart(2, '0');
 
                 document.getElementById('dobField').value = `${y}-${m}-${d}`;
                 document.getElementById('tobField').value = `${hh}:${mm}:${ss}`;
@@ -2701,10 +2882,18 @@
         
         <div id="progressionContent" style="display: block; width: 100%;">
             <div style="text-align:center; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; gap: 15px; border-bottom: 1px solid var(--card-border); padding-bottom: 15px; flex-wrap: wrap;">
-                <label style="color: var(--text-muted); font-weight: bold; font-size: 15px;">Major Target Date:</label>
-                <input type="date" id="progTargetDate" onchange="syncProgDates('progTargetDate')" oninput="syncProgDates('progTargetDate')" style="font-size: 16px;">
-                <button onclick="document.getElementById('progTargetDate').value = new Date().toISOString().split('T')[0]; syncProgDates('progTargetDate');" style="background: var(--accent-primary); color: #000; border:none;">Set Today</button>
-            </div>
+			<label style="color: var(--text-muted); font-weight: bold; font-size: 15px;">Major Target Date:</label>
+			<div style="display:flex; gap:8px; align-items:center;">
+				<input type="text" id="majorDay" placeholder="DD" maxlength="2" style="width:45px; text-align:center; font-size: 16px;" onkeydown="arrowSpinner(event, 1, 31, 2)" oninput="syncCustomProgDates('major')"> -
+				<input type="text" id="majorMonth" placeholder="MM" maxlength="2" style="width:45px; text-align:center; font-size: 16px;" onkeydown="arrowSpinner(event, 1, 12, 2)" oninput="syncCustomProgDates('major')"> -
+				<input type="text" id="majorYear" placeholder="YYYY" maxlength="4" style="width:65px; text-align:center; font-size: 16px;" onkeydown="arrowSpinner(event, 1900, 2100, 4)" oninput="syncCustomProgDates('major')">
+			</div>
+			<!-- Hidden input so your existing BNN engine logic doesn't break -->
+			<input type="hidden" id="progTargetDate">
+			<button onclick="setCustomTodayProg('major')" style="background: var(--accent-primary); color: #000; border:none;">Set Today</button>
+		</div>
+
+
 
             <div style="margin-bottom: 40px;">
                 <h3 style="color: var(--accent-secondary); text-align: center; text-transform: uppercase; letter-spacing: 2px;">Major Progression Kundali</h3>
@@ -2730,11 +2919,20 @@
 
             <div style="margin-bottom: 20px; border-top: 1px dashed var(--card-border); padding-top: 30px;">
                 
-                <div style="text-align:center; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; gap: 15px; padding-bottom: 15px; flex-wrap: wrap;">
-                    <label style="color: #f472b6; font-weight: bold; font-size: 15px;">Minor Target Date:</label>
-                    <input type="date" id="minorProgTargetDate" onchange="syncProgDates('minorProgTargetDate')" oninput="syncProgDates('minorProgTargetDate')" style="font-size: 16px;">
-                    <button onclick="document.getElementById('minorProgTargetDate').value = new Date().toISOString().split('T')[0]; syncProgDates('minorProgTargetDate');" style="background: #f472b6; color: #000; border:none;">Set Today</button>
-                </div>
+             <div style="text-align:center; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; gap: 15px; padding-bottom: 15px; flex-wrap: wrap;">
+			<label style="color: #f472b6; font-weight: bold; font-size: 15px;">Minor Target Date:</label>
+			<div style="display:flex; gap:8px; align-items:center;">
+				<input type="text" id="minorDay" placeholder="DD" maxlength="2" style="width:45px; text-align:center; font-size: 16px;" onkeydown="arrowSpinner(event, 1, 31, 2)" oninput="syncCustomProgDates('minor')"> -
+				<input type="text" id="minorMonth" placeholder="MM" maxlength="2" style="width:45px; text-align:center; font-size: 16px;" onkeydown="arrowSpinner(event, 1, 12, 2)" oninput="syncCustomProgDates('minor')"> -
+				<input type="text" id="minorYear" placeholder="YYYY" maxlength="4" style="width:65px; text-align:center; font-size: 16px;" onkeydown="arrowSpinner(event, 1900, 2100, 4)" oninput="syncCustomProgDates('minor')">
+			</div>
+			<!-- Hidden input so your existing BNN engine logic doesn't break -->
+			<input type="hidden" id="minorProgTargetDate">
+			<button onclick="setCustomTodayProg('minor')" style="background: #f472b6; color: #000; border:none;">Set Today</button>
+		</div>
+
+
+
 
                 <h3 style="color: #f472b6; text-align: center; text-transform: uppercase; letter-spacing: 2px;">Minor Progression Kundali</h3>
                 <div id="minorProgKundaliContainer" style="display:flex; justify-content:center; width:100%; margin-bottom: 20px;"></div>
@@ -3363,12 +3561,46 @@
 
 
 
+<script>
+
+// Syncs the DD-MM-YYYY inputs together and feeds them to the BNN progression engine
+function syncCustomProgDates(source) {
+    let d = document.getElementById(source + "Day").value;
+    let m = document.getElementById(source + "Month").value;
+    let y = document.getElementById(source + "Year").value;
+
+    if (d && m && y && y.length === 4) {
+        let dateStr = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+        
+        // Sync to the hidden inputs your engine reads
+        document.getElementById("progTargetDate").value = dateStr;
+        document.getElementById("minorProgTargetDate").value = dateStr;
+
+        // Keep Major and Minor visible UI boxes perfectly synced
+        let otherSource = (source === 'major') ? 'minor' : 'major';
+        document.getElementById(otherSource + "Day").value = d.padStart(2, '0');
+        document.getElementById(otherSource + "Month").value = m.padStart(2, '0');
+        document.getElementById(otherSource + "Year").value = y;
+
+        if (typeof runBNNProgressions === "function") runBNNProgressions();
+    }
+}
+
+function setCustomTodayProg(source) {
+    let now = new Date();
+    document.getElementById(source + "Day").value = String(now.getDate()).padStart(2, '0');
+    document.getElementById(source + "Month").value = String(now.getMonth() + 1).padStart(2, '0');
+    document.getElementById(source + "Year").value = now.getFullYear();
+    syncCustomProgDates(source);
+}
+
+// Ensure the page loads with today's date in the new boxes
+document.addEventListener("DOMContentLoaded", () => {
+    setCustomTodayProg('major'); 
+});
 
 
-
-
-
-
+</script>
 
 
 
